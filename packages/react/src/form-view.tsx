@@ -12,6 +12,7 @@ import {
 } from "@visual-json/core";
 import { useStudio } from "./context";
 import { Breadcrumbs } from "./breadcrumbs";
+import { EnumInput } from "./enum-input";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
 import { useDragDrop, type DragState } from "./use-drag-drop";
@@ -602,22 +603,13 @@ function renderEditInput(
 
   if (hasEnumValues && propSchema?.enum) {
     return (
-      <select
-        ref={inputRef as React.RefObject<HTMLSelectElement>}
+      <EnumInput
+        enumValues={propSchema.enum}
         value={displayValue}
-        onChange={(e) => handleValueChange(e.target.value)}
-        onClick={(e) => e.stopPropagation()}
-        style={{ ...inputStyle, cursor: "pointer" }}
-      >
-        {!propSchema.enum.some(
-          (v) => JSON.stringify(v) === JSON.stringify(node.value),
-        ) && <option value={displayValue}>{displayValue || "(empty)"}</option>}
-        {propSchema.enum.map((v, i) => (
-          <option key={i} value={String(v)}>
-            {String(v)}
-          </option>
-        ))}
-      </select>
+        onValueChange={handleValueChange}
+        inputRef={inputRef as React.RefObject<HTMLInputElement>}
+        inputStyle={inputStyle}
+      />
     );
   }
 
