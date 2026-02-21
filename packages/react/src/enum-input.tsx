@@ -91,6 +91,7 @@ export function EnumInput({
           setOpen(false);
           break;
         case "Tab":
+          setInputValue(value);
           setOpen(false);
           break;
       }
