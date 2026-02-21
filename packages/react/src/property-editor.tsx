@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   setValue,
   setKey,
@@ -13,6 +13,7 @@ import {
   type NodeType,
   type JsonSchemaProperty,
 } from "@visual-json/core";
+import { EnumInput } from "./enum-input";
 import { useStudio } from "./context";
 import { Breadcrumbs } from "./breadcrumbs";
 
@@ -34,6 +35,7 @@ function PropertyRow({ node, schemaProperty }: PropertyRowProps) {
   const { state, actions } = useStudio();
   const isContainer = node.type === "object" || node.type === "array";
   const [hoveredRow, setHoveredRow] = useState(false);
+  const enumRef = useRef<HTMLInputElement>(null);
 
   function handleValueChange(newValue: string) {
     let parsed: string | number | boolean | null;
@@ -123,12 +125,14 @@ function PropertyRow({ node, schemaProperty }: PropertyRowProps) {
         />
         {!isContainer ? (
           hasEnumValues ? (
-            <select
+            <EnumInput
+              enumValues={schemaProperty!.enum!}
               value={displayValue()}
-              onChange={(e) => handleValueChange(e.target.value)}
-              style={{
-                background: "var(--vj-input-bg, #3c3c3c)",
-                border: "1px solid var(--vj-input-border, #555555)",
+              onValueChange={handleValueChange}
+              inputRef={enumRef}
+              inputStyle={{
+                background: "none",
+                border: "1px solid transparent",
                 borderRadius: 3,
                 color:
                   node.type === "string"
@@ -138,15 +142,9 @@ function PropertyRow({ node, schemaProperty }: PropertyRowProps) {
                 fontSize: 13,
                 padding: "2px 6px",
                 flex: 1,
-                cursor: "pointer",
+                outline: "none",
               }}
-            >
-              {schemaProperty!.enum!.map((v, i) => (
-                <option key={i} value={String(v)}>
-                  {String(v)}
-                </option>
-              ))}
-            </select>
+            />
           ) : (
             <input
               value={displayValue()}

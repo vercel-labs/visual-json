@@ -16,7 +16,7 @@ interface EnumInputProps {
   enumValues: JsonValue[];
   value: string;
   onValueChange: (val: string) => void;
-  inputRef: RefObject<HTMLInputElement>;
+  inputRef: RefObject<HTMLInputElement | null>;
   inputStyle: CSSProperties;
 }
 

@@ -588,16 +588,13 @@ function renderEditInput(
 
   if (node.type === "boolean") {
     return (
-      <select
-        ref={inputRef as React.RefObject<HTMLSelectElement>}
+      <EnumInput
+        enumValues={["true", "false"]}
         value={String(node.value)}
-        onChange={(e) => handleValueChange(e.target.value)}
-        onClick={(e) => e.stopPropagation()}
-        style={{ ...inputStyle, cursor: "pointer" }}
-      >
-        <option value="true">true</option>
-        <option value="false">false</option>
-      </select>
+        onValueChange={handleValueChange}
+        inputRef={inputRef as React.RefObject<HTMLInputElement>}
+        inputStyle={inputStyle}
+      />
     );
   }
 
