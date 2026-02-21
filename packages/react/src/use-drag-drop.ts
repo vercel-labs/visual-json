@@ -1,6 +1,22 @@
 import { useState, useCallback, useRef } from "react";
-import { reorderChildren, moveNode } from "@visual-json/core";
+import { reorderChildren, moveNode, type TreeState } from "@visual-json/core";
 import { useStudio } from "./context";
+
+/** Check if `nodeId` is a descendant of `potentialAncestorId` by walking up parentId links. */
+function isDescendant(
+  tree: TreeState,
+  nodeId: string,
+  potentialAncestorId: string,
+): boolean {
+  let current = tree.nodesById.get(nodeId);
+  while (current) {
+    if (current.id === potentialAncestorId) return true;
+    current = current.parentId
+      ? tree.nodesById.get(current.parentId)
+      : undefined;
+  }
+  return false;
+}
 
 export interface DragState {
   draggedNodeId: string | null;
@@ -30,13 +46,16 @@ export function useDragDrop() {
 
   const handleDragOver = useCallback(
     (nodeId: string, position: "before" | "after") => {
+      const draggedId = dragStateRef.current.draggedNodeId;
+      if (draggedId && isDescendant(state.tree, nodeId, draggedId)) return;
+
       setDragState((prev) => ({
         ...prev,
         dropTargetNodeId: nodeId,
         dropPosition: position,
       }));
     },
-    [],
+    [state.tree],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -51,6 +70,9 @@ export function useDragDrop() {
     const draggedNode = state.tree.nodesById.get(draggedNodeId);
     const targetNode = state.tree.nodesById.get(dropTargetNodeId);
     if (!draggedNode || !targetNode) return;
+
+    // Prevent dropping a node into its own descendants
+    if (isDescendant(state.tree, dropTargetNodeId, draggedNodeId)) return;
 
     if (draggedNode.parentId && draggedNode.parentId === targetNode.parentId) {
       const parent = state.tree.nodesById.get(draggedNode.parentId);
