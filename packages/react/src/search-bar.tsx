@@ -70,7 +70,7 @@ export function SearchBar({ className }: SearchBarProps) {
           borderRadius: 3,
           color: "var(--vj-text, #cccccc)",
           fontFamily: "var(--vj-font, monospace)",
-          fontSize: 12,
+          fontSize: "var(--vj-input-font-size, 13px)",
           padding: "3px 8px",
           outline: "none",
           minWidth: 0,

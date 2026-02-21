@@ -51,6 +51,7 @@ const DEFAULT_CSS_VARS: Record<string, string> = {
   "--vj-input-border": "#555555",
   "--vj-error": "#f48771",
   "--vj-font": "monospace",
+  "--vj-input-font-size": "13px",
 };
 
 export function JsonEditor({
@@ -103,7 +104,12 @@ export function JsonEditor({
   };
 
   return (
-    <div className={className} style={containerStyle}>
+    <div className={className} data-vj-root="" style={containerStyle}>
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `@media(pointer:coarse){[data-vj-root]{--vj-input-font-size:16px}}`,
+        }}
+      />
       <VisualJson
         key={editorKey}
         value={valueRef.current}
