@@ -311,6 +311,7 @@ export function Editor({
   const [pasteText, setPasteText] = useState("");
   const dropRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isRawEdit = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -321,6 +322,14 @@ export function Editor({
       cancelled = true;
     };
   }, [filename]);
+
+  useEffect(() => {
+    if (isRawEdit.current) {
+      isRawEdit.current = false;
+      return;
+    }
+    setRawText(JSON.stringify(jsonValue, null, 2));
+  }, [jsonValue]);
 
   const loadJson = useCallback((text: string, fname: string) => {
     try {
@@ -389,6 +398,7 @@ export function Editor({
     try {
       const parsed = JSON.parse(newText);
       setRawError(null);
+      isRawEdit.current = true;
       setJsonValue(parsed);
     } catch (e) {
       setRawError(e instanceof Error ? e.message : "Invalid JSON");
