@@ -1,9 +1,15 @@
 {
   "name": "@visual-json/core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "Apache-2.0",
   "description": "Headless core for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
-  "keywords": ["json", "editor", "tree", "schema", "visual"],
+  "keywords": [
+    "json",
+    "editor",
+    "tree",
+    "schema",
+    "visual"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -17,7 +23,9 @@
       "require": "./dist/index.js"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",

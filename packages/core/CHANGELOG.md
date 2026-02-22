@@ -1,5 +1,11 @@
 # @visual-json/core
 
+## 0.1.1
+
+### Patch Changes
+
+- fix published package
+
 ## 0.1.0
 
 ### Minor Changes

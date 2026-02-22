@@ -1,5 +1,13 @@
 # @visual-json/react
 
+## 0.1.1
+
+### Patch Changes
+
+- fix published package
+- Updated dependencies
+  - @visual-json/core@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
