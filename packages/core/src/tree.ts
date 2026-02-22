@@ -139,3 +139,18 @@ export function findNodeByPath(
 
   return current;
 }
+
+export function isDescendant(
+  tree: TreeState,
+  nodeId: string,
+  potentialAncestorId: string,
+): boolean {
+  let current = tree.nodesById.get(nodeId);
+  while (current) {
+    if (current.id === potentialAncestorId) return true;
+    current = current.parentId
+      ? tree.nodesById.get(current.parentId)
+      : undefined;
+  }
+  return false;
+}

@@ -15,6 +15,7 @@ export {
   toJson,
   findNode,
   findNodeByPath,
+  isDescendant,
   resetIdCounter,
   getNodeType,
   generateId,

@@ -1,22 +1,6 @@
 import { useState, useCallback, useRef } from "react";
-import { reorderChildren, moveNode, type TreeState } from "@visual-json/core";
+import { reorderChildren, moveNode, isDescendant } from "@visual-json/core";
 import { useStudio } from "./context";
-
-/** Check if `nodeId` is a descendant of `potentialAncestorId` by walking up parentId links. */
-function isDescendant(
-  tree: TreeState,
-  nodeId: string,
-  potentialAncestorId: string,
-): boolean {
-  let current = tree.nodesById.get(nodeId);
-  while (current) {
-    if (current.id === potentialAncestorId) return true;
-    current = current.parentId
-      ? tree.nodesById.get(current.parentId)
-      : undefined;
-  }
-  return false;
-}
 
 export interface DragState {
   draggedNodeId: string | null;

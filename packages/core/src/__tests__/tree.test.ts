@@ -4,6 +4,7 @@ import {
   toJson,
   findNode,
   findNodeByPath,
+  isDescendant,
   resetIdCounter,
 } from "../tree";
 
@@ -80,10 +81,7 @@ describe("node paths", () => {
 
   it("assigns /key to direct children of root", () => {
     const state = fromJson({ a: 1, b: 2 });
-    expect(state.root.children.map((c) => c.path).sort()).toEqual([
-      "/a",
-      "/b",
-    ]);
+    expect(state.root.children.map((c) => c.path).sort()).toEqual(["/a", "/b"]);
   });
 
   it("assigns nested paths", () => {
@@ -127,5 +125,43 @@ describe("findNodeByPath", () => {
   it("returns undefined for missing paths", () => {
     const state = fromJson({ a: 1 });
     expect(findNodeByPath(state, "/b")).toBeUndefined();
+  });
+});
+
+describe("isDescendant", () => {
+  it("returns true for a direct child", () => {
+    const state = fromJson({ a: 1 });
+    const child = state.root.children[0];
+    expect(isDescendant(state, child.id, state.root.id)).toBe(true);
+  });
+
+  it("returns true for a deeply nested descendant", () => {
+    const state = fromJson({ x: { y: { z: 1 } } });
+    const z = state.root.children[0].children[0].children[0];
+    expect(isDescendant(state, z.id, state.root.id)).toBe(true);
+  });
+
+  it("returns true when nodeId equals potentialAncestorId", () => {
+    const state = fromJson({ a: 1 });
+    expect(isDescendant(state, state.root.id, state.root.id)).toBe(true);
+  });
+
+  it("returns false for a sibling", () => {
+    const state = fromJson({ a: 1, b: 2 });
+    const [a, b] = state.root.children;
+    expect(isDescendant(state, a.id, b.id)).toBe(false);
+  });
+
+  it("returns false for a node in a different subtree", () => {
+    const state = fromJson({ left: { l: 1 }, right: { r: 2 } });
+    const l = state.root.children[0].children[0];
+    const right = state.root.children[1];
+    expect(isDescendant(state, l.id, right.id)).toBe(false);
+  });
+
+  it("returns false when potential ancestor is a leaf descendant", () => {
+    const state = fromJson({ a: { b: 1 } });
+    const leaf = state.root.children[0].children[0];
+    expect(isDescendant(state, state.root.id, leaf.id)).toBe(false);
   });
 });
