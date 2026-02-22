@@ -2,8 +2,6 @@ import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import type { TreeNode, NodeType } from "@visual-json/core";
 import {
   removeNode,
-  getPropertySchema,
-  validateNode,
   duplicateNode,
   changeType,
   toJson,
@@ -51,11 +49,6 @@ function TreeNodeRow({
   const isActiveMatch =
     state.searchMatches.length > 0 &&
     state.searchMatches[state.searchMatchIndex]?.nodeId === node.id;
-
-  const schema = state.schema;
-  const nodeSchema = schema ? getPropertySchema(schema, node.path) : undefined;
-  const validation = nodeSchema ? validateNode(node, nodeSchema) : null;
-  const hasError = validation ? !validation.valid : false;
 
   const isDragTarget = dragState.dropTargetNodeId === node.id;
   const isDraggedNode = dragState.draggedNodeId === node.id;

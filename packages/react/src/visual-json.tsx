@@ -234,7 +234,7 @@ export function VisualJson({
       Math.min(prev, Math.max(matches.length - 1, 0)),
     );
     setSearchMatchNodeIds(new Set(matches.map((m) => m.nodeId)));
-  }, [tree]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [tree]);
 
   const state: StudioState = useMemo(
     () => ({

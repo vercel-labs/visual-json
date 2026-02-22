@@ -5,12 +5,7 @@ import type {
   TreeNode,
   TreeState,
 } from "./types";
-import {
-  toJson,
-  getNodeType,
-  generateId,
-  buildSubtree,
-} from "./tree";
+import { toJson, getNodeType, buildSubtree } from "./tree";
 
 function rebuildMap(root: TreeNode): Map<string, TreeNode> {
   const map = new Map<string, TreeNode>();
@@ -103,7 +98,13 @@ export function setValue(
   return clonePathToNode(state, nodeId, (n) => {
     const parentPath = n.path.split("/").slice(0, -1).join("/") || "";
     const nodesById = new Map<string, TreeNode>();
-    const subtree = buildSubtree(n.key, value, parentPath, n.parentId, nodesById);
+    const subtree = buildSubtree(
+      n.key,
+      value,
+      parentPath,
+      n.parentId,
+      nodesById,
+    );
     return { ...subtree, id: n.id };
   });
 }

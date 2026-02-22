@@ -183,7 +183,6 @@ function FormField({
   }, [state.tree, node.id, node.type, node.children.length, actions]);
 
   const description = propSchema?.description;
-  const defaultVal = propSchema?.default;
   const isDeprecated = propSchema?.deprecated;
   const fieldTitle = propSchema?.title;
   const parentIsObject =

@@ -388,7 +388,9 @@ export function Editor({
   const handleCopyJson = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(JSON.stringify(jsonValue, null, 2));
-    } catch {}
+    } catch {
+      // clipboard access may be denied
+    }
   }, [jsonValue]);
 
   const handleRawChange = useCallback((newText: string) => {
