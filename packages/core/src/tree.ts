@@ -140,6 +140,11 @@ export function findNodeByPath(
   return current;
 }
 
+/**
+ * Check whether `nodeId` is a descendant of `potentialAncestorId` by walking
+ * up `parentId` links. Returns `true` when the two IDs are equal (a node is
+ * considered a descendant of itself).
+ */
 export function isDescendant(
   tree: TreeState,
   nodeId: string,
