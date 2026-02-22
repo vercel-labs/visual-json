@@ -7,3 +7,6 @@ coverage
 !.env.example
 .DS_Store
 .next
+test-results
+playwright-report
+blob-report
