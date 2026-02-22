@@ -311,7 +311,7 @@ export function Editor({
   const [pasteText, setPasteText] = useState("");
   const dropRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isRawEdit = useRef(false);
+  const skipRawSync = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -324,8 +324,8 @@ export function Editor({
   }, [filename]);
 
   useEffect(() => {
-    if (isRawEdit.current) {
-      isRawEdit.current = false;
+    if (skipRawSync.current) {
+      skipRawSync.current = false;
       return;
     }
     setRawText(JSON.stringify(jsonValue, null, 2));
@@ -338,7 +338,6 @@ export function Editor({
       setFilename(fname);
       setActiveSample(fname);
       setSchema(null);
-      setRawText(JSON.stringify(parsed, null, 2));
       setRawError(null);
       setParseError(null);
     } catch {
@@ -353,7 +352,6 @@ export function Editor({
       setFilename(fname);
       setJsonValue(sample.data);
       setSchema(null);
-      setRawText(JSON.stringify(sample.data, null, 2));
       setRawError(null);
     }
   }, []);
@@ -398,7 +396,7 @@ export function Editor({
     try {
       const parsed = JSON.parse(newText);
       setRawError(null);
-      isRawEdit.current = true;
+      skipRawSync.current = true;
       setJsonValue(parsed);
     } catch (e) {
       setRawError(e instanceof Error ? e.message : "Invalid JSON");
