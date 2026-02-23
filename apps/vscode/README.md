@@ -2,6 +2,8 @@
 
 VS Code extension for [visual-json](https://github.com/vercel-labs/visual-json) — the visual JSON editor.
 
+> **Beta** — This extension is under active development. Feedback, bug reports, and feature requests are welcome at [github.com/vercel-labs/visual-json/issues](https://github.com/vercel-labs/visual-json/issues).
+
 ## Features
 
 - **Visual editor** for `.json` and `.jsonc` files via "Open With..." > "visual-json"

@@ -1,5 +1,6 @@
 import * as vscode from "vscode";
 import { resolveSchema } from "@visual-json/core";
+import { parse as parseJsonc } from "jsonc-parser";
 import {
   getWebviewHtml,
   type HostToWebviewMessage,
@@ -54,7 +55,7 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
           }
           case "requestSchema": {
             try {
-              const parsed = JSON.parse(msg.json);
+              const parsed = parseJsonc(msg.json);
               const schema = await resolveSchema(parsed, msg.filename);
               const result: HostToWebviewMessage = {
                 type: "schemaResult",

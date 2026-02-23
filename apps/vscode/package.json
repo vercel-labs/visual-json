@@ -1,7 +1,7 @@
 {
   "name": "@visual-json/vscode",
   "displayName": "visual-json",
-  "description": "Visual JSON editor with tree view, schema support, and search",
+  "description": "(Beta) Visual JSON editor with tree view, schema support, and search",
   "version": "0.0.0",
   "license": "Apache-2.0",
   "publisher": "visual-json",
