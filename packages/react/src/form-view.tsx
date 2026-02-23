@@ -289,7 +289,7 @@ function FormField({
                   !isRoot && !parentIsObject && !isSelected
                     ? "var(--vj-text-muted, #888888)"
                     : "inherit",
-                fontSize: 13,
+                fontSize: "var(--vj-input-font-size, 13px)",
                 fontFamily: "var(--vj-font, monospace)",
                 fontWeight: 500,
                 flexShrink: 0,
@@ -484,7 +484,7 @@ function FormField({
               !parentIsObject && !isSelected
                 ? "var(--vj-text-muted, #888888)"
                 : "inherit",
-            fontSize: 13,
+            fontSize: "var(--vj-input-font-size, 13px)",
             fontFamily: "var(--vj-font, monospace)",
             flexShrink: 0,
             display: "inline-block",
@@ -528,7 +528,7 @@ function FormField({
         <span
           style={{
             color: valueColor,
-            fontSize: 13,
+            fontSize: "var(--vj-input-font-size, 13px)",
             fontFamily: "var(--vj-font, monospace)",
             overflow: "hidden",
             textOverflow: "ellipsis",
@@ -615,7 +615,7 @@ function renderEditInput(
         style={{
           color: "var(--vj-boolean, #569cd6)",
           fontFamily: "var(--vj-font, monospace)",
-          fontSize: 13,
+          fontSize: "var(--vj-input-font-size, 13px)",
           fontStyle: "italic",
           flex: 1,
         }}
@@ -895,9 +895,11 @@ export function FormView({
     >
       <div
         style={{
+          display: "flex",
+          alignItems: "center",
           padding: "4px 8px",
           borderBottom: "1px solid var(--vj-border, #333333)",
-          backgroundColor: "var(--vj-bg-panel, #252526)",
+          backgroundColor: "var(--vj-bg, #1e1e1e)",
           flexShrink: 0,
         }}
       >

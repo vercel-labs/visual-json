@@ -153,10 +153,6 @@ function CustomEditor({ value, onChange }) {
       <td>Path breadcrumbs with typeahead navigation</td>
     </tr>
     <tr>
-      <td><code>PropertyEditor</code></td>
-      <td>Single-node key/value/type editor</td>
-    </tr>
-    <tr>
       <td><code>ContextMenu</code></td>
       <td>Right-click menu for tree operations</td>
     </tr>

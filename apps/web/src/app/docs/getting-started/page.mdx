@@ -15,7 +15,8 @@ visual-json is split into focused packages:
   </thead>
   <tbody>
     <tr><td><code>@visual-json/core</code></td><td>Headless tree model, operations, schema resolution, diffing, search, and validation</td></tr>
-    <tr><td><code>@visual-json/react</code></td><td>React UI components — TreeView, FormView, DiffView, PropertyEditor, and more</td></tr>
+    <tr><td><code>@visual-json/react</code></td><td>React UI components — TreeView, FormView, DiffView, and more</td></tr>
+    <tr><td><code>@visual-json/vscode</code></td><td>VS Code extension — open any JSON/JSONC file with a visual editor</td></tr>
   </tbody>
 </table>
 
@@ -32,7 +33,7 @@ npm install @visual-json/core @visual-json/react
 Wrap your UI in the `VisualJson` provider, then use any combination of the built-in components:
 
 ```tsx
-import { VisualJson, TreeView, PropertyEditor } from "@visual-json/react";
+import { VisualJson, TreeView, FormView } from "@visual-json/react";
 import { useState } from "react";
 
 function Editor() {
@@ -42,7 +43,7 @@ function Editor() {
     <VisualJson value={value} onChange={setValue}>
       <div style={{ display: "flex", gap: 16 }}>
         <TreeView />
-        <PropertyEditor />
+        <FormView />
       </div>
     </VisualJson>
   );
@@ -61,6 +62,15 @@ visual-json supports multiple ways to view and edit your data:
 - **Form View** — Schema-aware form editor with descriptions, required fields, and enum dropdowns
 - **Diff View** — Side-by-side comparison of original vs. edited JSON, with color-coded additions, removals, and changes
 - **Raw View** — Direct text editing of the underlying JSON
+
+## VS Code Extension
+
+visual-json is also available as a VS Code extension. Open any `.json` or `.jsonc` file,
+right-click the tab, and choose **"Open With..." > "visual-json"** to use the visual editor.
+
+The extension includes a tree sidebar, form editor, schema support (auto-detected from
+`$schema` or known filenames like `package.json` and `tsconfig.json`), and adapts to your
+VS Code theme colors automatically.
 
 ## Next Steps
 

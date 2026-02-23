@@ -1,0 +1,68 @@
+{
+  "name": "@visual-json/vscode",
+  "displayName": "visual-json",
+  "description": "Visual JSON editor with tree view, schema support, and search",
+  "version": "0.0.0",
+  "license": "Apache-2.0",
+  "publisher": "visual-json",
+  "private": true,
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Other", "Visualization"],
+  "activationEvents": [
+    "onCustomEditor:visualJson.editor",
+    "onView:visualJson.panel"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "customEditors": [
+      {
+        "viewType": "visualJson.editor",
+        "displayName": "visual-json",
+        "selector": [
+          { "filenamePattern": "*.json" },
+          { "filenamePattern": "*.jsonc" }
+        ],
+        "priority": "default"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "visualJson.panel",
+          "name": "visual-json",
+          "when": "resourceLangId == json || resourceLangId == jsonc"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "visualJson.openWithVisualJson",
+        "title": "Open with visual-json"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.mjs --production",
+    "dev": "node esbuild.mjs --watch",
+    "check-types": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"**/*.{ts,tsx}\"",
+    "package": "vsce package --no-dependencies"
+  },
+  "dependencies": {
+    "@visual-json/core": "workspace:*",
+    "@visual-json/react": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.25.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "typescript": "5.9.3"
+  }
+}

@@ -55,3 +55,5 @@ Do **not** add `--port` flags -- portless handles port assignment automatically.
 ## Documentation
 
 Use HTML `<table>` elements for tables in all documentation files (README.md, MDX docs). Do not use markdown pipe tables.
+
+When making a user-facing change (adding, removing, or renaming a component, prop, API, or feature), update all relevant documentation in the same PR: web app docs (`apps/web/src/app/docs/`), package READMEs, and any SKILL.md files that reference the changed surface area.

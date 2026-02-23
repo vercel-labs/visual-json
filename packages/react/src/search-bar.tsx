@@ -52,7 +52,7 @@ export function SearchBar({ className }: SearchBarProps) {
         alignItems: "center",
         gap: 6,
         padding: "4px 8px",
-        backgroundColor: "var(--vj-bg-panel, #252526)",
+        backgroundColor: "var(--vj-bg, #1e1e1e)",
         borderBottom: "1px solid var(--vj-border, #333333)",
       }}
     >

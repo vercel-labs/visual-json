@@ -142,7 +142,7 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
         style={{
           width: "100%",
           boxSizing: "border-box",
-          padding: "2px 0",
+          padding: "3px 0",
           fontSize: "var(--vj-input-font-size, 13px)",
           fontFamily: "var(--vj-font, monospace)",
           color: "var(--vj-text-muted, #999999)",

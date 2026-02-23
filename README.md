@@ -20,6 +20,10 @@ The visual JSON editor. Schema-aware, embeddable, extensible.
       <td><a href="packages/react"><code>@visual-json/react</code></a></td>
       <td>React UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>
+    <tr>
+      <td><a href="apps/vscode"><code>@visual-json/vscode</code></a></td>
+      <td>VS Code extension — visual JSON editor with tree sidebar, schema support, and JSONC</td>
+    </tr>
   </tbody>
 </table>
 
