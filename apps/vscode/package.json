@@ -9,7 +9,10 @@
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": ["Other", "Visualization"],
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
   "activationEvents": [
     "onCustomEditor:visualJson.editor",
     "onView:visualJson.panel"
@@ -21,10 +24,14 @@
         "viewType": "visualJson.editor",
         "displayName": "visual-json",
         "selector": [
-          { "filenamePattern": "*.json" },
-          { "filenamePattern": "*.jsonc" }
+          {
+            "filenamePattern": "*.json"
+          },
+          {
+            "filenamePattern": "*.jsonc"
+          }
         ],
-        "priority": "default"
+        "priority": "option"
       }
     ],
     "views": {
@@ -54,7 +61,8 @@
   },
   "dependencies": {
     "@visual-json/core": "workspace:*",
-    "@visual-json/react": "workspace:*"
+    "@visual-json/react": "workspace:*",
+    "jsonc-parser": "^3.3.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

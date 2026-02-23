@@ -7,6 +7,7 @@ import {
 } from "react";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
 import { JsonEditor } from "@visual-json/react";
+import { parse as parseJsonc } from "jsonc-parser";
 import { vscode } from "./vscode";
 
 const VSCODE_THEME_STYLE: CSSProperties = {
@@ -57,61 +58,14 @@ interface SchemaResultMessage {
 
 type HostMessage = ContentMessage | ModeMessage | SchemaResultMessage;
 
-function stripJsonComments(text: string): string {
-  let result = "";
-  let i = 0;
-  let inString = false;
-
-  while (i < text.length) {
-    if (inString) {
-      if (text[i] === "\\" && i + 1 < text.length) {
-        result += text[i] + text[i + 1];
-        i += 2;
-        continue;
-      }
-      if (text[i] === '"') {
-        inString = false;
-      }
-      result += text[i];
-      i++;
-      continue;
-    }
-
-    if (text[i] === '"') {
-      inString = true;
-      result += text[i];
-      i++;
-      continue;
-    }
-
-    if (text[i] === "/" && i + 1 < text.length) {
-      if (text[i + 1] === "/") {
-        while (i < text.length && text[i] !== "\n") i++;
-        continue;
-      }
-      if (text[i + 1] === "*") {
-        i += 2;
-        while (i + 1 < text.length && !(text[i] === "*" && text[i + 1] === "/"))
-          i++;
-        i += 2;
-        continue;
-      }
-    }
-
-    result += text[i];
-    i++;
-  }
-
-  return result;
-}
-
 export function App() {
   const [jsonValue, setJsonValue] = useState<JsonValue | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
   const [schema, setSchema] = useState<JsonSchema | null>(null);
-  const [studioKey, setStudioKey] = useState(0);
   const [, setMode] = useState<Mode>("editor");
   const suppressEditRef = useRef(false);
+  const lastJsonRef = useRef<string>("");
+  const editTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (event: MessageEvent<HostMessage>) => {
@@ -123,15 +77,15 @@ export function App() {
             return;
           }
           try {
-            const cleaned = stripJsonComments(msg.json);
-            const parsed = JSON.parse(cleaned);
+            if (msg.json === lastJsonRef.current) return;
+            lastJsonRef.current = msg.json;
+            const parsed = parseJsonc(msg.json);
             setJsonValue(parsed);
             setParseError(null);
-            setStudioKey((k) => k + 1);
 
             vscode.postMessage({
               type: "requestSchema",
-              json: cleaned,
+              json: msg.json,
               filename: msg.filename,
             });
           } catch (err) {
@@ -155,9 +109,13 @@ export function App() {
 
   const handleChange = useCallback((value: JsonValue) => {
     setJsonValue(value);
-    const json = JSON.stringify(value, null, 2);
-    suppressEditRef.current = true;
-    vscode.postMessage({ type: "edit", json });
+    if (editTimerRef.current !== null) clearTimeout(editTimerRef.current);
+    editTimerRef.current = setTimeout(() => {
+      const json = JSON.stringify(value, null, 2);
+      lastJsonRef.current = json;
+      suppressEditRef.current = true;
+      vscode.postMessage({ type: "edit", json });
+    }, 150);
   }, []);
 
   if (parseError) {
@@ -180,7 +138,6 @@ export function App() {
 
   return (
     <JsonEditor
-      key={studioKey}
       value={jsonValue}
       onChange={handleChange}
       schema={schema}

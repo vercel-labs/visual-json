@@ -12,6 +12,7 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
   private view?: vscode.WebviewView;
   private currentDocumentUri?: string;
   private ready = false;
+  private suppressNextEdit = false;
 
   constructor(private readonly context: vscode.ExtensionContext) {}
 
@@ -85,6 +86,10 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
           this.currentDocumentUri &&
           e.document.uri.toString() === this.currentDocumentUri
         ) {
+          if (this.suppressNextEdit) {
+            this.suppressNextEdit = false;
+            return;
+          }
           this.sendDocumentContent(e.document);
         }
       },
@@ -137,6 +142,7 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
       new vscode.Range(0, 0, document.lineCount, 0),
       json,
     );
+    this.suppressNextEdit = true;
     await vscode.workspace.applyEdit(edit);
   }
 }
