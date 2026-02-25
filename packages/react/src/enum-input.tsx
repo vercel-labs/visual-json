@@ -153,7 +153,7 @@ export function EnumInput({
             overflowY: "auto",
             backgroundColor: "var(--vj-bg-panel, #252526)",
             border: "1px solid var(--vj-border, #333333)",
-            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+            boxShadow: "var(--vj-shadow-subtle, 0 4px 12px rgba(0,0,0,0.3))",
           }}
         >
           {suggestions.map((s, i) => (
