@@ -63,7 +63,7 @@ export function ContextMenu({ x, y, items, onClose }: ContextMenuProps) {
         backgroundColor: "var(--vj-bg-panel, #252526)",
         border: "1px solid var(--vj-border, #454545)",
         borderRadius: 4,
-        boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
+        boxShadow: "var(--vj-shadow, 0 4px 12px rgba(0,0,0,0.5))",
         padding: "4px 0",
         minWidth: 160,
       }}

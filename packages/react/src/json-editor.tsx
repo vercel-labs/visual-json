@@ -50,6 +50,8 @@ const DEFAULT_CSS_VARS: Record<string, string> = {
   "--vj-input-bg": "#3c3c3c",
   "--vj-input-border": "#555555",
   "--vj-error": "#f48771",
+  "--vj-shadow": "0 4px 12px rgba(0,0,0,0.5)",
+  "--vj-shadow-subtle": "0 4px 12px rgba(0,0,0,0.3)",
   "--vj-font": "monospace",
   "--vj-input-font-size": "13px",
 };
