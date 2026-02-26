@@ -16,7 +16,11 @@ import { EnumInput } from "./enum-input";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
 import { deleteSelectedNodes } from "./selection-utils";
-import { useDragDrop, type DragState } from "./use-drag-drop";
+import {
+  useDragDrop,
+  setMultiDragImage,
+  type DragState,
+} from "./use-drag-drop";
 
 interface FormFieldProps {
   node: TreeNode;
@@ -208,6 +212,12 @@ function FormField({
           draggable={!isRoot}
           onDragStart={(e) => {
             e.dataTransfer.effectAllowed = "move";
+            if (
+              state.selectedNodeIds.size > 1 &&
+              state.selectedNodeIds.has(node.id)
+            ) {
+              setMultiDragImage(e, state.selectedNodeIds.size);
+            }
             onDragStart(node.id);
           }}
           onDragOver={handleDragOverEvent}
@@ -419,6 +429,12 @@ function FormField({
       draggable={!isRoot}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
+        if (
+          state.selectedNodeIds.size > 1 &&
+          state.selectedNodeIds.has(node.id)
+        ) {
+          setMultiDragImage(e, state.selectedNodeIds.size);
+        }
         onDragStart(node.id);
       }}
       onDragOver={handleDragOverEvent}

@@ -1,3 +1,4 @@
+import type React from "react";
 import { useState, useCallback, useRef } from "react";
 import {
   removeNode,
@@ -31,6 +32,34 @@ function sortByTreeOrder(root: TreeNode, ids: Set<string>): string[] {
   }
   walk(root);
   return result;
+}
+
+export function setMultiDragImage(e: React.DragEvent, count: number) {
+  const ghost = document.createElement("div");
+  ghost.textContent = `${count} selected`;
+  const root = document.querySelector("[data-form-container], [role='tree']");
+  const cs = root ? getComputedStyle(root) : null;
+  const bg = cs?.getPropertyValue("--vj-bg-selected").trim() || "#2a5a1e";
+  const fg =
+    cs?.getPropertyValue("--vj-text-selected").trim() ||
+    cs?.getPropertyValue("--vj-text").trim() ||
+    "#cccccc";
+  ghost.style.cssText = [
+    "position:fixed",
+    "top:-1000px",
+    "left:-1000px",
+    "padding:4px 12px",
+    `background:${bg}`,
+    `color:${fg}`,
+    `font-family:${cs?.getPropertyValue("--vj-font").trim() || "monospace"}`,
+    "font-size:13px",
+    "border-radius:4px",
+    "white-space:nowrap",
+    "pointer-events:none",
+  ].join(";");
+  document.body.appendChild(ghost);
+  e.dataTransfer.setDragImage(ghost, 0, 14);
+  setTimeout(() => ghost.remove(), 0);
 }
 
 export function useDragDrop() {
