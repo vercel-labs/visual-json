@@ -81,6 +81,10 @@ All operations return a new `TreeState` with structural sharing.
       <td>Add a child to an object or array</td>
     </tr>
     <tr>
+      <td><code>insertProperty(state, parentId, key, value, index)</code></td>
+      <td>Insert a child at a specific index</td>
+    </tr>
+    <tr>
       <td><code>removeNode(state, nodeId)</code></td>
       <td>Remove a node</td>
     </tr>
@@ -91,6 +95,10 @@ All operations return a new `TreeState` with structural sharing.
     <tr>
       <td><code>reorderChildren(state, parentId, from, to)</code></td>
       <td>Reorder children within a parent</td>
+    </tr>
+    <tr>
+      <td><code>reorderChildrenMulti(state, parentId, movedIds, targetSiblingId, position)</code></td>
+      <td>Reorder multiple children relative to a sibling</td>
     </tr>
     <tr>
       <td><code>changeType(state, nodeId, newType)</code></td>

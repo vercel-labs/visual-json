@@ -126,7 +126,7 @@ export function useDragDrop() {
         .map((n) => ({ key: n.key, value: toJson(n) }));
 
       let newTree = state.tree;
-      for (const id of draggedNodeIds) {
+      for (const id of [...orderedIds].reverse()) {
         if (newTree.nodesById.has(id)) {
           newTree = removeNode(newTree, id);
         }

@@ -40,15 +40,17 @@ export function deleteSelectedNodes(
 
   let nextFocusId: string | null = null;
   for (let i = firstDeletedIdx; i < visibleNodes.length; i++) {
-    if (!selectedIds.has(visibleNodes[i].id)) {
-      nextFocusId = visibleNodes[i].id;
+    const id = visibleNodes[i].id;
+    if (!selectedIds.has(id) && newTree.nodesById.has(id)) {
+      nextFocusId = id;
       break;
     }
   }
   if (!nextFocusId) {
     for (let i = firstDeletedIdx - 1; i >= 0; i--) {
-      if (!selectedIds.has(visibleNodes[i].id)) {
-        nextFocusId = visibleNodes[i].id;
+      const id = visibleNodes[i].id;
+      if (!selectedIds.has(id) && newTree.nodesById.has(id)) {
+        nextFocusId = id;
         break;
       }
     }

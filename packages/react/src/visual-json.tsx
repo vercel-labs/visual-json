@@ -53,6 +53,11 @@ export function VisualJson({
     () => new Set([tree.root.id]),
   );
 
+  const visibleNodes = useMemo(
+    () => getVisibleNodes(tree.root, (id) => expandedNodeIds.has(id)),
+    [tree.root, expandedNodeIds],
+  );
+
   const historyRef = useRef<History>(new History());
   const isInternalChange = useRef(false);
   const hasMounted = useRef(false);
@@ -161,6 +166,11 @@ export function VisualJson({
       const next = new Set(prev);
       if (next.has(nodeId)) {
         next.delete(nodeId);
+        if (next.size === 0) {
+          setFocusedNodeId(null);
+          anchorNodeIdRef.current = null;
+          return next;
+        }
       } else {
         next.add(nodeId);
       }
@@ -179,10 +189,7 @@ export function VisualJson({
         anchorNodeIdRef.current = toNodeId;
         return;
       }
-      const visible = getVisibleNodes(tree.root, (id) =>
-        expandedNodeIds.has(id),
-      );
-      const rangeIds = computeRangeIds(visible, anchor, toNodeId);
+      const rangeIds = computeRangeIds(visibleNodes, anchor, toNodeId);
       if (!rangeIds) {
         setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
@@ -192,7 +199,7 @@ export function VisualJson({
       setSelectedNodeIds(rangeIds);
       setFocusedNodeId(toNodeId);
     },
-    [tree.root, expandedNodeIds],
+    [visibleNodes],
   );
 
   const toggleExpand = useCallback((nodeId: string) => {

@@ -197,11 +197,6 @@ test.describe("multi-select: form view", () => {
     await formRow(page, "name").click();
     await formRow(page, "version").click({ modifiers: [mod] });
 
-    const form = page.locator(formSelector);
-    const selectedRows = form.locator("[data-form-node-id]").filter({
-      has: page.locator("[style]"),
-    });
-
     const nameRow = formRow(page, "name");
     const versionRow = formRow(page, "version");
 
