@@ -368,6 +368,45 @@ test.describe("multi-select: tree delete edge cases", () => {
   });
 });
 
+test.describe("multi-select: cross-parent drag preserves state", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+  });
+
+  test("expanded container stays expanded after cross-parent drag", async ({
+    page,
+  }) => {
+    const scriptsItem = treeItem(page, "scripts");
+    await scriptsItem.click();
+
+    const isExpanded = await scriptsItem
+      .locator("[role='treeitem']")
+      .first()
+      .isVisible()
+      .catch(() => false);
+
+    if (!isExpanded) {
+      await page.locator(treeSelector).press("ArrowRight");
+    }
+
+    const devChild = treeItem(page, "dev");
+    await expect(devChild).toBeVisible();
+
+    const target = treeItem(page, "dependencies");
+    const targetBox = await target.boundingBox();
+    await scriptsItem.dragTo(target, {
+      targetPosition: { x: targetBox!.width / 2, y: targetBox!.height - 2 },
+    });
+
+    const scriptsAfter = treeItem(page, "scripts");
+    await expect(scriptsAfter).toBeVisible();
+
+    const devAfter = treeItem(page, "dev");
+    await expect(devAfter).toBeVisible();
+  });
+});
+
 test.describe("multi-select: cross-view sync", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
@@ -399,5 +438,70 @@ test.describe("multi-select: cross-view sync", () => {
 
     const selected = await selectedTreeItems(page);
     expect(selected).toHaveLength(2);
+  });
+});
+
+test.describe("multi-select: Escape clears selection", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+    await page.waitForSelector(formSelector);
+  });
+
+  test("Escape clears multi-selection in tree view", async ({ page }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "name").click();
+    await treeItem(page, "version").click({ modifiers: [mod] });
+    expect(await selectedTreeItems(page)).toHaveLength(2);
+
+    await page.locator(treeSelector).press("Escape");
+
+    const selected = await selectedTreeItems(page);
+    expect(selected).toHaveLength(0);
+  });
+
+  test("Escape clears multi-selection in form view", async ({ page }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "/").click();
+
+    await formRow(page, "name").click();
+    await formRow(page, "version").click({ modifiers: [mod] });
+
+    const nameBgBefore = await formRow(page, "name").evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    expect(nameBgBefore).not.toBe("rgba(0, 0, 0, 0)");
+
+    await page.locator(formSelector).press("Escape");
+
+    const nameBgAfter = await formRow(page, "name").evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    const versionBgAfter = await formRow(page, "version").evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    expect(nameBgAfter).toBe("rgba(0, 0, 0, 0)");
+    expect(versionBgAfter).toBe("rgba(0, 0, 0, 0)");
+  });
+
+  test("Escape while editing in form reverts edit without clearing edit state", async ({
+    page,
+  }) => {
+    await treeItem(page, "/").click();
+
+    await formRow(page, "name").click();
+    await page.locator(formSelector).press("Enter");
+
+    const input = page.locator(`${formSelector} input`).first();
+    await expect(input).toBeVisible();
+    await input.fill("changed-value");
+
+    await page.locator(formSelector).press("Escape");
+
+    await expect(
+      page.locator(`${formSelector} input[value='changed-value']`),
+    ).toHaveCount(0);
   });
 });

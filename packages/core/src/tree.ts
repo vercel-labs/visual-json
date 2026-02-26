@@ -115,6 +115,34 @@ export function toJson(node: TreeNode): JsonValue {
   }
 }
 
+/**
+ * Clone a subtree with updated key, path, and parentId while preserving
+ * all original node IDs. Used for cross-parent moves where identity must
+ * be retained so that UI state (expanded, selected, etc.) stays valid.
+ */
+export function reparentSubtree(
+  node: TreeNode,
+  newKey: string,
+  parentPath: string,
+  newParentId: string,
+): TreeNode {
+  const newPath = parentPath ? `${parentPath}/${newKey}` : `/${newKey}`;
+  return {
+    ...node,
+    key: newKey,
+    path: newPath,
+    parentId: newParentId,
+    children: node.children.map((child, i) =>
+      reparentSubtree(
+        child,
+        node.type === "array" ? String(i) : child.key,
+        newPath,
+        node.id,
+      ),
+    ),
+  };
+}
+
 export function findNode(
   state: TreeState,
   nodeId: string,

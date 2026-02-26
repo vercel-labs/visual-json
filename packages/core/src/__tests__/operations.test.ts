@@ -7,6 +7,7 @@ import {
   setKey,
   addProperty,
   insertProperty,
+  insertNode,
   removeNode,
   moveNode,
   reorderChildren,
@@ -409,5 +410,78 @@ describe("reorderChildrenMulti", () => {
       "c",
       "d",
     ]);
+  });
+});
+
+describe("insertNode", () => {
+  it("inserts a node while preserving its ID", () => {
+    const src = fromJson({ src: { val: 1 }, dst: {} });
+    const val = src.root.children[0].children[0];
+    const originalId = val.id;
+    const removed = removeNode(src, val.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, val, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.id).toBe(originalId);
+    expect(toJson(next.root)).toEqual({ src: {}, dst: { val: 1 } });
+  });
+
+  it("preserves descendant IDs", () => {
+    const src = fromJson({ src: { obj: { a: 1, b: 2 } }, dst: {} });
+    const obj = src.root.children[0].children[0];
+    const childA = obj.children[0];
+    const childB = obj.children[1];
+    const removed = removeNode(src, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, obj, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.id).toBe(obj.id);
+    expect(inserted.children[0].id).toBe(childA.id);
+    expect(inserted.children[1].id).toBe(childB.id);
+  });
+
+  it("updates paths after insertion", () => {
+    const src = fromJson({ src: { val: 1 }, dst: {} });
+    const val = src.root.children[0].children[0];
+    const removed = removeNode(src, val.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, val, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.path).toBe("/dst/val");
+  });
+
+  it("re-indexes array keys when inserting into an array", () => {
+    const state = fromJson({ items: [10, 20, 30], extra: 99 });
+    const extra = state.root.children[1];
+    const removed = removeNode(state, extra.id);
+    const items = removed.root.children[0];
+    const next = insertNode(removed, items.id, extra, 1);
+    expect(toJson(next.root)).toEqual({ items: [10, 99, 20, 30] });
+    expect(next.root.children[0].children.map((c) => c.key)).toEqual([
+      "0",
+      "1",
+      "2",
+      "3",
+    ]);
+  });
+
+  it("returns state unchanged for unknown parent", () => {
+    const state = fromJson({ a: 1 });
+    const child = state.root.children[0];
+    const next = insertNode(state, "nonexistent", child, 0);
+    expect(next).toBe(state);
+  });
+
+  it("registers inserted nodes in nodesById", () => {
+    const src = fromJson({ src: { obj: { deep: 1 } }, dst: {} });
+    const obj = src.root.children[0].children[0];
+    const deep = obj.children[0];
+    const removed = removeNode(src, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, obj, 0);
+    expect(next.nodesById.has(obj.id)).toBe(true);
+    expect(next.nodesById.has(deep.id)).toBe(true);
+    expect(next.nodesById.get(obj.id)?.path).toBe("/dst/obj");
+    expect(next.nodesById.get(deep.id)?.path).toBe("/dst/obj/deep");
   });
 });

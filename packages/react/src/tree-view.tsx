@@ -446,6 +446,11 @@ export function TreeView({
           }
           break;
         }
+        case "Escape": {
+          e.preventDefault();
+          actions.setSelection(null, new Set<string>(), null);
+          break;
+        }
         case "Delete":
         case "Backspace": {
           e.preventDefault();

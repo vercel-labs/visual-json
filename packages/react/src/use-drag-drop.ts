@@ -2,21 +2,21 @@ import type React from "react";
 import { useState, useCallback, useRef } from "react";
 import {
   removeNode,
-  insertProperty,
+  insertNode,
   reorderChildrenMulti,
   isDescendant,
-  toJson,
   type TreeNode,
 } from "@visual-json/core";
 import { useStudio } from "./context";
+import { DEFAULT_CSS_VARS } from "./theme";
 
 export interface DragState {
-  draggedNodeIds: Set<string>;
+  draggedNodeIds: ReadonlySet<string>;
   dropTargetNodeId: string | null;
   dropPosition: "before" | "after" | null;
 }
 
-const EMPTY_SET = new Set<string>();
+const EMPTY_SET: ReadonlySet<string> = Object.freeze(new Set<string>());
 
 const INITIAL_DRAG_STATE: DragState = {
   draggedNodeIds: EMPTY_SET,
@@ -24,7 +24,7 @@ const INITIAL_DRAG_STATE: DragState = {
   dropPosition: null,
 };
 
-function sortByTreeOrder(root: TreeNode, ids: Set<string>): string[] {
+function sortByTreeOrder(root: TreeNode, ids: ReadonlySet<string>): string[] {
   const result: string[] = [];
   function walk(node: TreeNode) {
     if (ids.has(node.id)) result.push(node.id);
@@ -39,11 +39,15 @@ export function setMultiDragImage(e: React.DragEvent, count: number) {
   ghost.textContent = `${count} selected`;
   const root = document.querySelector("[data-form-container], [role='tree']");
   const cs = root ? getComputedStyle(root) : null;
-  const bg = cs?.getPropertyValue("--vj-bg-selected").trim() || "#2a5a1e";
+  const bg =
+    cs?.getPropertyValue("--vj-bg-selected").trim() ||
+    DEFAULT_CSS_VARS["--vj-bg-selected"];
   const fg =
     cs?.getPropertyValue("--vj-text-selected").trim() ||
     cs?.getPropertyValue("--vj-text").trim() ||
-    "#cccccc";
+    DEFAULT_CSS_VARS["--vj-text"];
+  const font =
+    cs?.getPropertyValue("--vj-font").trim() || DEFAULT_CSS_VARS["--vj-font"];
   ghost.style.cssText = [
     "position:fixed",
     "top:-1000px",
@@ -51,7 +55,7 @@ export function setMultiDragImage(e: React.DragEvent, count: number) {
     "padding:4px 12px",
     `background:${bg}`,
     `color:${fg}`,
-    `font-family:${cs?.getPropertyValue("--vj-font").trim() || "monospace"}`,
+    `font-family:${font}`,
     "font-size:13px",
     "border-radius:4px",
     "white-space:nowrap",
@@ -69,8 +73,8 @@ export function useDragDrop() {
   dragStateRef.current = dragState;
 
   const handleDragStart = useCallback(
-    (nodeId: string, selectedIds?: Set<string>) => {
-      let ids: Set<string>;
+    (nodeId: string, selectedIds?: ReadonlySet<string>) => {
+      let ids: ReadonlySet<string>;
       if (selectedIds && selectedIds.size > 0 && selectedIds.has(nodeId)) {
         ids = selectedIds;
       } else {
@@ -149,10 +153,9 @@ export function useDragDrop() {
       actions.setTree(newTree);
     } else {
       const orderedIds = sortByTreeOrder(state.tree.root, draggedNodeIds);
-      const draggedData = orderedIds
+      const draggedNodes = orderedIds
         .map((id) => state.tree.nodesById.get(id))
-        .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null)
-        .map((n) => ({ key: n.key, value: toJson(n) }));
+        .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null);
 
       let newTree = state.tree;
       for (const id of [...orderedIds].reverse()) {
@@ -177,18 +180,11 @@ export function useDragDrop() {
       );
       if (dropPosition === "after") insertIdx++;
 
-      // Each insertProperty rebuilds the tree, but the parent's node ID is
-      // stable across rebuilds—insertProperty looks up the ID in the new
-      // tree's nodesById map, so we don't need to re-fetch the parent.
-      for (let i = 0; i < draggedData.length; i++) {
-        const { key, value } = draggedData[i];
-        const actualKey =
-          updatedParent.type === "array" ? String(insertIdx + i) : key;
-        newTree = insertProperty(
+      for (let i = 0; i < draggedNodes.length; i++) {
+        newTree = insertNode(
           newTree,
           updatedParent.id,
-          actualKey,
-          value,
+          draggedNodes[i],
           insertIdx + i,
         );
       }

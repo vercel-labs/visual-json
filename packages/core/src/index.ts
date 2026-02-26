@@ -20,6 +20,7 @@ export {
   getNodeType,
   generateId,
   buildSubtree,
+  reparentSubtree,
 } from "./tree";
 
 export {
@@ -27,6 +28,7 @@ export {
   setKey,
   addProperty,
   insertProperty,
+  insertNode,
   removeNode,
   moveNode,
   reorderChildren,

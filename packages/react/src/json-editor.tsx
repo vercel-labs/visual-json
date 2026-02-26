@@ -28,31 +28,7 @@ export interface JsonEditorProps {
   sidebarOpen?: boolean;
 }
 
-const DEFAULT_CSS_VARS: Record<string, string> = {
-  "--vj-bg": "#1e1e1e",
-  "--vj-bg-panel": "#252526",
-  "--vj-bg-hover": "#2a2d2e",
-  "--vj-bg-selected": "#2a5a1e",
-  "--vj-bg-selected-muted": "#2a2d2e",
-  "--vj-bg-match": "#3a3520",
-  "--vj-bg-match-active": "#51502b",
-  "--vj-border": "#333333",
-  "--vj-border-subtle": "#2a2a2a",
-  "--vj-text": "#cccccc",
-  "--vj-text-muted": "#888888",
-  "--vj-text-dim": "#666666",
-  "--vj-text-dimmer": "#555555",
-  "--vj-string": "#ce9178",
-  "--vj-number": "#b5cea8",
-  "--vj-boolean": "#569cd6",
-  "--vj-accent": "#007acc",
-  "--vj-accent-muted": "#094771",
-  "--vj-input-bg": "#3c3c3c",
-  "--vj-input-border": "#555555",
-  "--vj-error": "#f48771",
-  "--vj-font": "monospace",
-  "--vj-input-font-size": "13px",
-};
+import { DEFAULT_CSS_VARS } from "./theme";
 
 export function JsonEditor({
   value,

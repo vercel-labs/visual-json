@@ -5,7 +5,7 @@ import type {
   TreeNode,
   TreeState,
 } from "./types";
-import { toJson, getNodeType, buildSubtree } from "./tree";
+import { toJson, getNodeType, buildSubtree, reparentSubtree } from "./tree";
 
 function rebuildMap(root: TreeNode): Map<string, TreeNode> {
   const map = new Map<string, TreeNode>();
@@ -164,6 +164,25 @@ export function insertProperty(
     const newChild = buildSubtree(key, value, parentPath, p.id, new Map());
     const newChildren = [...p.children];
     newChildren.splice(index, 0, newChild);
+    return reindexArrayChildren({ ...p, children: newChildren });
+  });
+}
+
+export function insertNode(
+  state: TreeState,
+  parentId: string,
+  node: TreeNode,
+  index: number,
+): TreeState {
+  const parent = state.nodesById.get(parentId);
+  if (!parent) return state;
+
+  return clonePathToNode(state, parentId, (p) => {
+    const parentPath = p.path === "/" ? "" : p.path;
+    const key = p.type === "array" ? String(index) : node.key;
+    const reparented = reparentSubtree(node, key, parentPath, p.id);
+    const newChildren = [...p.children];
+    newChildren.splice(index, 0, reparented);
     return reindexArrayChildren({ ...p, children: newChildren });
   });
 }

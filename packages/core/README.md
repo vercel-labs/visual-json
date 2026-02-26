@@ -85,6 +85,10 @@ All operations return a new `TreeState` with structural sharing.
       <td>Insert a child at a specific index</td>
     </tr>
     <tr>
+      <td><code>insertNode(state, parentId, node, index)</code></td>
+      <td>Insert an existing node subtree at a specific index, preserving IDs</td>
+    </tr>
+    <tr>
       <td><code>removeNode(state, nodeId)</code></td>
       <td>Remove a node</td>
     </tr>

@@ -884,6 +884,7 @@ export function FormView({
         case "Escape": {
           e.preventDefault();
           setEditingNodeId(null);
+          actions.setSelection(null, new Set<string>(), null);
           break;
         }
         case "Delete":
