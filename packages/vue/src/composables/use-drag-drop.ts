@@ -1,18 +1,13 @@
 import { ref } from "vue";
-import { reorderChildren, moveNode, isDescendant } from "@visual-json/core";
+import { isDescendant } from "@visual-json/core";
+import {
+  type DragState,
+  INITIAL_DRAG_STATE,
+  computeDrop,
+} from "@visual-json/ui-shared";
 import { useStudio } from "./use-studio";
 
-export interface DragState {
-  draggedNodeId: string | null;
-  dropTargetNodeId: string | null;
-  dropPosition: "before" | "after" | null;
-}
-
-const INITIAL_DRAG_STATE: DragState = {
-  draggedNodeId: null,
-  dropTargetNodeId: null,
-  dropPosition: null,
-};
+export type { DragState } from "@visual-json/ui-shared";
 
 export function useDragDrop() {
   const { state, actions } = useStudio();
@@ -42,57 +37,10 @@ export function useDragDrop() {
   }
 
   function handleDrop() {
-    const { draggedNodeId, dropTargetNodeId, dropPosition } = dragState.value;
-    if (!draggedNodeId || !dropTargetNodeId || !dropPosition) return;
-
-    const draggedNode = state.tree.value.nodesById.get(draggedNodeId);
-    const targetNode = state.tree.value.nodesById.get(dropTargetNodeId);
-    if (!draggedNode || !targetNode) return;
-
-    if (isDescendant(state.tree.value, dropTargetNodeId, draggedNodeId)) return;
-
-    if (draggedNode.parentId && draggedNode.parentId === targetNode.parentId) {
-      const parent = state.tree.value.nodesById.get(draggedNode.parentId);
-      if (parent) {
-        const fromIndex = parent.children.findIndex(
-          (c) => c.id === draggedNodeId,
-        );
-        let toIndex = parent.children.findIndex(
-          (c) => c.id === dropTargetNodeId,
-        );
-        if (dropPosition === "after") {
-          toIndex++;
-        }
-        if (fromIndex < toIndex) {
-          toIndex--;
-        }
-        if (fromIndex !== toIndex && fromIndex >= 0 && toIndex >= 0) {
-          const newTree = reorderChildren(
-            state.tree.value,
-            parent.id,
-            fromIndex,
-            toIndex,
-          );
-          actions.setTree(newTree);
-        }
-      }
-    } else if (targetNode.parentId) {
-      const newParent = state.tree.value.nodesById.get(targetNode.parentId);
-      if (newParent) {
-        let toIndex = newParent.children.findIndex(
-          (c) => c.id === dropTargetNodeId,
-        );
-        if (dropPosition === "after") toIndex++;
-        const newTree = moveNode(
-          state.tree.value,
-          draggedNodeId,
-          newParent.id,
-          toIndex,
-        );
-        actions.setTree(newTree);
-      }
+    const newTree = computeDrop(state.tree.value, dragState.value);
+    if (newTree) {
+      actions.setTree(newTree);
     }
-
     dragState.value = { ...INITIAL_DRAG_STATE };
   }
 

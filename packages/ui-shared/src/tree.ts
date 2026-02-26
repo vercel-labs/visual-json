@@ -1,5 +1,27 @@
 import type { TreeNode, TreeState } from "@visual-json/core";
 
+export function getVisibleNodes(
+  root: TreeNode,
+  isExpanded: (nodeId: string) => boolean,
+): TreeNode[] {
+  const result: TreeNode[] = [];
+
+  function walk(node: TreeNode) {
+    result.push(node);
+    if (
+      isExpanded(node.id) &&
+      (node.type === "object" || node.type === "array")
+    ) {
+      for (const child of node.children) {
+        walk(child);
+      }
+    }
+  }
+
+  walk(root);
+  return result;
+}
+
 const LABEL_FIELDS = ["name", "type", "title", "id", "label", "key"];
 
 /**
@@ -21,4 +43,12 @@ export function getDisplayKey(node: TreeNode, state: TreeState): string {
   }
 
   return node.key;
+}
+
+export function collectAllIds(node: TreeNode): string[] {
+  const ids: string[] = [node.id];
+  for (const child of node.children) {
+    ids.push(...collectAllIds(child));
+  }
+  return ids;
 }

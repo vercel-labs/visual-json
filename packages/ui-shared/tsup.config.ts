@@ -6,10 +6,4 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: [
-    "react",
-    "react-dom",
-    "@visual-json/core",
-    "@visual-json/ui-shared",
-  ],
 });

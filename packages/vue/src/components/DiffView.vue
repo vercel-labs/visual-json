@@ -1,21 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import { computeDiff, type DiffEntry, type DiffType } from "@visual-json/core";
+import { computeDiff, type DiffEntry } from "@visual-json/core";
+import { DIFF_COLORS, formatValue } from "@visual-json/ui-shared";
 
 const props = defineProps<{
   originalJson: unknown;
   currentJson: unknown;
   class?: string;
 }>();
-
-const DIFF_COLORS: Record<
-  DiffType,
-  { bg: string; marker: string; label: string }
-> = {
-  added: { bg: "#1e3a1e", marker: "+", label: "#4ec94e" },
-  removed: { bg: "#3a1e1e", marker: "-", label: "#f48771" },
-  changed: { bg: "#3a3a1e", marker: "~", label: "#dcdcaa" },
-};
 
 const entries = computed(() =>
   computeDiff(props.originalJson as never, props.currentJson as never),
@@ -24,18 +16,6 @@ const entries = computed(() =>
 const added = computed(() => entries.value.filter((e) => e.type === "added").length);
 const removed = computed(() => entries.value.filter((e) => e.type === "removed").length);
 const changed = computed(() => entries.value.filter((e) => e.type === "changed").length);
-
-function formatValue(value: unknown): string {
-  if (value === undefined) return "";
-  if (value === null) return "null";
-  if (typeof value === "string") return JSON.stringify(value);
-  if (typeof value === "object") {
-    const json = JSON.stringify(value, null, 2);
-    if (json.length > 80) return JSON.stringify(value).slice(0, 77) + "...";
-    return json;
-  }
-  return String(value);
-}
 
 function getColors(entry: DiffEntry) {
   return DIFF_COLORS[entry.type];

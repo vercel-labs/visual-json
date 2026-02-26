@@ -1,12 +1,11 @@
 {
-  "name": "@visual-json/react",
-  "version": "0.1.1",
+  "name": "@visual-json/ui-shared",
+  "version": "0.1.0",
   "license": "Apache-2.0",
-  "description": "React components for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
+  "description": "Shared UI utilities for visual-json framework packages.",
   "keywords": [
     "json",
     "editor",
-    "react",
     "tree",
     "visual"
   ],
@@ -31,19 +30,13 @@
     "dev": "tsup --watch",
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
-    "format": "prettier --write \"**/*.{ts,tsx}\""
+    "format": "prettier --write \"**/*.ts\""
   },
   "dependencies": {
-    "@visual-json/core": "workspace:*",
-    "@visual-json/ui-shared": "workspace:*"
+    "@visual-json/core": "workspace:*"
   },
   "devDependencies": {
-    "@types/react": "^19.2.14",
-    "react": "^19.2.4",
     "tsup": "^8.5.1",
     "typescript": "5.9.3"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
   }
 }

@@ -13,8 +13,7 @@ export type {
 export { default as DiffView } from "./components/DiffView.vue";
 export { default as EnumInput } from "./components/EnumInput.vue";
 
-export { getVisibleNodes } from "./utils/get-visible-nodes";
-export { getDisplayKey } from "./utils/display-key";
+export { getVisibleNodes, getDisplayKey } from "@visual-json/ui-shared";
 export { useStudio } from "./composables/use-studio";
 export { useDragDrop } from "./composables/use-drag-drop";
 export type { DragState } from "./composables/use-drag-drop";

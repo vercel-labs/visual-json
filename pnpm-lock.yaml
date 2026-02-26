@@ -273,6 +273,9 @@ importers:
       '@visual-json/core':
         specifier: workspace:*
         version: link:../core
+      '@visual-json/ui-shared':
+        specifier: workspace:*
+        version: link:../ui-shared
     devDependencies:
       '@types/react':
         specifier: ^19.2.14
@@ -287,11 +290,27 @@ importers:
         specifier: 5.9.3
         version: 5.9.3
 
+  packages/ui-shared:
+    dependencies:
+      '@visual-json/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      tsup:
+        specifier: ^8.5.1
+        version: 8.5.1(@microsoft/api-extractor@7.57.6(@types/node@25.3.0))(jiti@2.6.1)(postcss@8.5.6)(typescript@5.9.3)(yaml@2.8.2)
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   packages/vue:
     dependencies:
       '@visual-json/core':
         specifier: workspace:*
         version: link:../core
+      '@visual-json/ui-shared':
+        specifier: workspace:*
+        version: link:../ui-shared
     devDependencies:
       '@vitejs/plugin-vue':
         specifier: ^5.2.4

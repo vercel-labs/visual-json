@@ -5,14 +5,17 @@ import {
   setKey,
   addProperty,
   removeNode,
-  getPropertySchema,
-  resolveRef,
   type TreeNode,
-  type JsonSchemaProperty,
-  type JsonSchema,
 } from "@visual-json/core";
+import {
+  getDisplayKey,
+  getResolvedSchema,
+  getValueColor as getValueColorFn,
+  getDisplayValue as getDisplayValueFn,
+  checkRequired as checkRequiredFn,
+  parseInputValue,
+} from "@visual-json/ui-shared";
 import { useStudio } from "../composables/use-studio";
-import { getDisplayKey } from "../utils/display-key";
 import { FORM_VIEW_KEY } from "./form-view-context";
 import EnumInput from "./EnumInput.vue";
 
@@ -53,17 +56,6 @@ const parentIsObject = computed(() => {
   return state.tree.value.nodesById.get(props.node.parentId)?.type === "object";
 });
 
-function getResolvedSchema(
-  schema: JsonSchema | null,
-  rootSchema: JsonSchemaProperty | undefined,
-  path: string,
-): JsonSchemaProperty | undefined {
-  if (!schema) return undefined;
-  const raw = getPropertySchema(schema, path, rootSchema);
-  if (!raw) return undefined;
-  return resolveRef(raw, rootSchema ?? schema);
-}
-
 const propSchema = computed(() =>
   getResolvedSchema(
     ctx.schema.value,
@@ -72,20 +64,9 @@ const propSchema = computed(() =>
   ),
 );
 
-function checkRequired(): boolean {
-  const schema = ctx.schema.value;
-  if (!schema || !props.node.parentId) return false;
-  const parentPath =
-    props.node.path.split("/").slice(0, -1).join("/") || "/";
-  const parentSchema = getResolvedSchema(
-    schema,
-    ctx.rootSchema.value,
-    parentPath,
-  );
-  return parentSchema?.required?.includes(props.node.key) ?? false;
-}
-
-const isRequired = computed(() => checkRequired());
+const isRequired = computed(() =>
+  checkRequiredFn(props.node, ctx.schema.value, ctx.rootSchema.value),
+);
 const description = computed(() => propSchema.value?.description);
 const isDeprecated = computed(() => propSchema.value?.deprecated);
 const fieldTitle = computed(() => propSchema.value?.title);
@@ -128,17 +109,11 @@ function getRowColor() {
 }
 
 function getValueColor(): string {
-  if (props.node.type === "boolean" || props.node.type === "null")
-    return "var(--vj-boolean, #569cd6)";
-  if (props.node.type === "number") return "var(--vj-number, #b5cea8)";
-  return "var(--vj-string, #ce9178)";
+  return getValueColorFn(props.node);
 }
 
 function getDisplayValue(): string {
-  if (props.node.type === "null") return "null";
-  if (props.node.type === "boolean") return String(props.node.value);
-  if (props.node.value === null || props.node.value === undefined) return "";
-  return String(props.node.value);
+  return getDisplayValueFn(props.node);
 }
 
 function handleDragOver(e: DragEvent) {
@@ -149,25 +124,7 @@ function handleDragOver(e: DragEvent) {
 }
 
 function handleValueChange(newValue: string) {
-  let parsed: string | number | boolean | null;
-  if (
-    propSchema.value?.type === "boolean" ||
-    newValue === "true" ||
-    newValue === "false"
-  ) {
-    parsed = newValue === "true";
-  } else if (newValue === "null") {
-    parsed = null;
-  } else if (
-    propSchema.value?.type === "number" ||
-    propSchema.value?.type === "integer" ||
-    props.node.type === "number"
-  ) {
-    const num = Number(newValue);
-    parsed = isNaN(num) ? newValue : num;
-  } else {
-    parsed = newValue;
-  }
+  const parsed = parseInputValue(newValue, propSchema.value?.type, props.node.type);
   const newTree = setValue(state.tree.value, props.node.id, parsed);
   actions.setTree(newTree);
 }

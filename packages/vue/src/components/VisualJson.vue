@@ -10,8 +10,8 @@ import {
   type JsonSchema,
   type TreeState,
   type SearchMatch,
-  type TreeNode,
 } from "@visual-json/core";
+import { collectAllIds } from "@visual-json/ui-shared";
 import { STUDIO_KEY } from "../provide-inject";
 import type { StudioState, StudioActions } from "../provide-inject";
 
@@ -26,12 +26,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   change: [value: JsonValue];
 }>();
-
-function collectAllIds(node: TreeNode): string[] {
-  const ids: string[] = [node.id];
-  for (const child of node.children) ids.push(...collectAllIds(child));
-  return ids;
-}
 
 const tree = ref<TreeState>(fromJson(props.value));
 const selectedNodeId = ref<string | null>(null);

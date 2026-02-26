@@ -20,11 +20,12 @@ export default defineConfig({
       formats: ["es", "cjs"],
     },
     rollupOptions: {
-      external: ["vue", "@visual-json/core"],
+      external: ["vue", "@visual-json/core", "@visual-json/ui-shared"],
       output: {
         globals: {
           vue: "Vue",
           "@visual-json/core": "VisualJsonCore",
+          "@visual-json/ui-shared": "VisualJsonUiShared",
         },
       },
     },

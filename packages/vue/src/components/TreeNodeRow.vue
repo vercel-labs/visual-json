@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
-import { getDisplayKey } from "../utils/display-key";
+import { getDisplayKey } from "@visual-json/ui-shared";
 import type { DragState } from "../composables/use-drag-drop";
 import type { ContextMenuEntry } from "./ContextMenu.vue";
 

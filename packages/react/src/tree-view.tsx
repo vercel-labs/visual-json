@@ -8,8 +8,7 @@ import {
 } from "@visual-json/core";
 import { useStudio } from "./context";
 import { ContextMenu, type ContextMenuEntry } from "./context-menu";
-import { getDisplayKey } from "./display-key";
-import { getVisibleNodes } from "./get-visible-nodes";
+import { getDisplayKey, getVisibleNodes } from "@visual-json/ui-shared";
 import { useDragDrop, type DragState } from "./use-drag-drop";
 
 interface TreeNodeRowProps {

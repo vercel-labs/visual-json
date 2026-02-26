@@ -34,7 +34,8 @@
     "format": "prettier --write \"**/*.{ts,vue}\""
   },
   "dependencies": {
-    "@visual-json/core": "workspace:*"
+    "@visual-json/core": "workspace:*",
+    "@visual-json/ui-shared": "workspace:*"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",

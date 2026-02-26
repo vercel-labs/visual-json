@@ -4,17 +4,22 @@ import {
   setKey,
   addProperty,
   removeNode,
-  getPropertySchema,
-  resolveRef,
   type TreeNode,
   type JsonSchemaProperty,
   type JsonSchema,
 } from "@visual-json/core";
+import {
+  getDisplayKey,
+  getVisibleNodes,
+  getResolvedSchema,
+  getValueColor,
+  getDisplayValue,
+  checkRequired,
+  parseInputValue,
+} from "@visual-json/ui-shared";
 import { useStudio } from "./context";
 import { Breadcrumbs } from "./breadcrumbs";
 import { EnumInput } from "./enum-input";
-import { getDisplayKey } from "./display-key";
-import { getVisibleNodes } from "./get-visible-nodes";
 import { useDragDrop, type DragState } from "./use-drag-drop";
 
 interface FormFieldProps {
@@ -38,31 +43,6 @@ interface FormFieldProps {
   onDragOver: (nodeId: string, position: "before" | "after") => void;
   onDragEnd: () => void;
   onDrop: () => void;
-}
-
-function getResolvedSchema(
-  schema: JsonSchema | null,
-  rootSchema: JsonSchemaProperty | undefined,
-  path: string,
-): JsonSchemaProperty | undefined {
-  if (!schema) return undefined;
-  const raw = getPropertySchema(schema, path, rootSchema);
-  if (!raw) return undefined;
-  return resolveRef(raw, rootSchema ?? schema);
-}
-
-function getValueColor(node: TreeNode): string {
-  if (node.type === "boolean" || node.type === "null")
-    return "var(--vj-boolean, #569cd6)";
-  if (node.type === "number") return "var(--vj-number, #b5cea8)";
-  return "var(--vj-string, #ce9178)";
-}
-
-function getDisplayValue(node: TreeNode): string {
-  if (node.type === "null") return "null";
-  if (node.type === "boolean") return String(node.value);
-  if (node.value === null || node.value === undefined) return "";
-  return String(node.value);
 }
 
 function FormField({
@@ -135,25 +115,7 @@ function FormField({
 
   const handleValueChange = useCallback(
     (newValue: string) => {
-      let parsed: string | number | boolean | null;
-      if (
-        propSchema?.type === "boolean" ||
-        newValue === "true" ||
-        newValue === "false"
-      ) {
-        parsed = newValue === "true";
-      } else if (newValue === "null") {
-        parsed = null;
-      } else if (
-        propSchema?.type === "number" ||
-        propSchema?.type === "integer" ||
-        node.type === "number"
-      ) {
-        const num = Number(newValue);
-        parsed = isNaN(num) ? newValue : num;
-      } else {
-        parsed = newValue;
-      }
+      const parsed = parseInputValue(newValue, propSchema?.type, node.type);
       const newTree = setValue(state.tree, node.id, parsed);
       actions.setTree(newTree);
     },
@@ -639,17 +601,6 @@ function renderEditInput(
       style={inputStyle}
     />
   );
-}
-
-function checkRequired(
-  node: TreeNode,
-  schema: JsonSchema | null,
-  rootSchema: JsonSchemaProperty | undefined,
-): boolean {
-  if (!schema || !node.parentId) return false;
-  const parentPath = node.path.split("/").slice(0, -1).join("/") || "/";
-  const parentSchema = getResolvedSchema(schema, rootSchema, parentPath);
-  return parentSchema?.required?.includes(node.key) ?? false;
 }
 
 export interface FormViewProps {

@@ -10,7 +10,7 @@ import {
 } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
-import { getVisibleNodes } from "../utils/get-visible-nodes";
+import { getVisibleNodes } from "@visual-json/ui-shared";
 import TreeNodeRow from "./TreeNodeRow.vue";
 import ContextMenu, { type ContextMenuEntry } from "./ContextMenu.vue";
 
