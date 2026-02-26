@@ -3,7 +3,7 @@ export { metadata } from "./metadata";
 # Getting Started
 
 visual-json is the visual JSON editor. Schema-aware, embeddable, extensible. It provides tree view, form view, diff view,
-and raw editing modes — all powered by a headless core library and a set of React components.
+and raw editing modes — all powered by a headless core library with React and Vue components.
 
 ## Packages
 
@@ -16,19 +16,24 @@ visual-json is split into focused packages:
   <tbody>
     <tr><td><code>@visual-json/core</code></td><td>Headless tree model, operations, schema resolution, diffing, search, and validation</td></tr>
     <tr><td><code>@visual-json/react</code></td><td>React UI components — TreeView, FormView, DiffView, and more</td></tr>
+    <tr><td><code>@visual-json/vue</code></td><td>Vue 3 UI components — TreeView, FormView, DiffView, and more</td></tr>
     <tr><td><code>@visual-json/vscode</code></td><td>VS Code extension — open any JSON/JSONC file with a visual editor</td></tr>
   </tbody>
 </table>
 
 ## Installation
 
-Install the core library and React components:
+Install the core library and your framework's components:
 
 ```bash
+# React
 npm install @visual-json/core @visual-json/react
+
+# Vue
+npm install @visual-json/core @visual-json/vue
 ```
 
-## Quick Start
+## Quick Start (React)
 
 Wrap your UI in the `VisualJson` provider, then use any combination of the built-in components:
 
@@ -48,6 +53,28 @@ function Editor() {
     </VisualJson>
   );
 }
+```
+
+## Quick Start (Vue)
+
+Same pattern — the `VisualJson` component provides state to all child components:
+
+```vue
+<script setup>
+import { ref } from "vue";
+import { VisualJson, TreeView, FormView } from "@visual-json/vue";
+
+const value = ref({ hello: "world" });
+</script>
+
+<template>
+  <VisualJson :value="value" @change="value = $event">
+    <div style="display: flex; gap: 16px">
+      <TreeView />
+      <FormView />
+    </div>
+  </VisualJson>
+</template>
 ```
 
 The `VisualJson` component manages all internal state — tree structure, selection,
@@ -75,4 +102,5 @@ VS Code theme colors automatically.
 ## Next Steps
 
 - [Core API](/docs/core) — Learn about the headless tree model and operations
-- [React Components](/docs/react) — Explore the full component library
+- [React Components](/docs/react) — Explore the React component library
+- [Vue Components](/docs/vue) — Explore the Vue component library
