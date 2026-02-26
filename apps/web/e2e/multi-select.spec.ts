@@ -394,8 +394,8 @@ test.describe("multi-select: cross-view sync", () => {
   }) => {
     const mod = process.platform === "darwin" ? "Meta" : "Control";
 
-    await treeItem(page, "name").click();
-    await formRow(page, "version").click({ modifiers: [mod] });
+    await treeItem(page, "/").click();
+    await formRow(page, "name").click({ modifiers: [mod] });
 
     const selected = await selectedTreeItems(page);
     expect(selected).toHaveLength(2);
