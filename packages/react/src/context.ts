@@ -4,6 +4,7 @@ import type { TreeState, JsonSchema, SearchMatch } from "@visual-json/core";
 export interface StudioState {
   tree: TreeState;
   selectedNodeId: string | null;
+  selectedNodeIds: Set<string>;
   expandedNodeIds: Set<string>;
   schema: JsonSchema | null;
   searchQuery: string;
@@ -15,6 +16,8 @@ export interface StudioState {
 export interface StudioActions {
   setTree: (tree: TreeState) => void;
   selectNode: (nodeId: string | null) => void;
+  toggleNodeSelection: (nodeId: string) => void;
+  selectNodeRange: (toNodeId: string) => void;
   toggleExpand: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;
   collapseNode: (nodeId: string) => void;

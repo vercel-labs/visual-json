@@ -26,6 +26,7 @@ export {
   setValue,
   setKey,
   addProperty,
+  insertProperty,
   removeNode,
   moveNode,
   reorderChildren,

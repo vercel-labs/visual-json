@@ -40,7 +40,7 @@ function TreeNodeRow({
   onContextMenu,
 }: TreeNodeRowProps) {
   const { state, actions } = useStudio();
-  const isSelected = state.selectedNodeId === node.id;
+  const isSelected = state.selectedNodeIds.has(node.id);
   const isExpanded = state.expandedNodeIds.has(node.id);
   const isContainer = node.type === "object" || node.type === "array";
   const [hovered, setHovered] = useState(false);
@@ -51,7 +51,7 @@ function TreeNodeRow({
     state.searchMatches[state.searchMatchIndex]?.nodeId === node.id;
 
   const isDragTarget = dragState.dropTargetNodeId === node.id;
-  const isDraggedNode = dragState.draggedNodeId === node.id;
+  const isDraggedNode = dragState.draggedNodeIds.has(node.id);
 
   function displayValue(): string {
     if (isContainer) {
@@ -86,7 +86,15 @@ function TreeNodeRow({
         role="treeitem"
         aria-selected={isSelected}
         aria-expanded={isContainer ? isExpanded : undefined}
-        onClick={() => actions.selectNode(node.id)}
+        onClick={(e) => {
+          if (e.shiftKey) {
+            actions.selectNodeRange(node.id);
+          } else if (e.metaKey || e.ctrlKey) {
+            actions.toggleNodeSelection(node.id);
+          } else {
+            actions.selectNode(node.id);
+          }
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onContextMenu={(e) => onContextMenu(e, node)}
@@ -239,11 +247,16 @@ export function TreeView({
 
   const {
     dragState,
-    handleDragStart,
+    handleDragStart: rawDragStart,
     handleDragOver,
     handleDragEnd,
     handleDrop,
   } = useDragDrop();
+
+  const handleDragStart = useCallback(
+    (nodeId: string) => rawDragStart(nodeId, state.selectedNodeIds),
+    [rawDragStart, state.selectedNodeIds],
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -260,10 +273,12 @@ export function TreeView({
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
       e.preventDefault();
-      actions.selectNode(node.id);
+      if (!state.selectedNodeIds.has(node.id)) {
+        actions.selectNode(node.id);
+      }
       setContextMenu({ x: e.clientX, y: e.clientY, node });
     },
-    [actions],
+    [actions, state.selectedNodeIds],
   );
 
   const buildContextMenuItems = useCallback(
@@ -372,13 +387,25 @@ export function TreeView({
         case "ArrowDown": {
           e.preventDefault();
           const next = visibleNodes[currentIndex + 1];
-          if (next) actions.selectNode(next.id);
+          if (next) {
+            if (e.shiftKey) {
+              actions.selectNodeRange(next.id);
+            } else {
+              actions.selectNode(next.id);
+            }
+          }
           break;
         }
         case "ArrowUp": {
           e.preventDefault();
           const prev = visibleNodes[currentIndex - 1];
-          if (prev) actions.selectNode(prev.id);
+          if (prev) {
+            if (e.shiftKey) {
+              actions.selectNodeRange(prev.id);
+            } else {
+              actions.selectNode(prev.id);
+            }
+          }
           break;
         }
         case "ArrowRight": {
@@ -409,16 +436,33 @@ export function TreeView({
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const toDelete =
-            currentIndex >= 0 ? visibleNodes[currentIndex] : null;
-          if (toDelete && toDelete.parentId) {
-            const nextSelect =
-              visibleNodes[currentIndex + 1] ?? visibleNodes[currentIndex - 1];
-            const newTree = removeNode(state.tree, toDelete.id);
-            actions.setTree(newTree);
-            if (nextSelect && nextSelect.id !== toDelete.id) {
-              actions.selectNode(nextSelect.id);
+          const idsToDelete = [...state.selectedNodeIds].filter((id) => {
+            const node = state.tree.nodesById.get(id);
+            return node && node.parentId !== null;
+          });
+          if (idsToDelete.length === 0) break;
+          const firstDeletedIdx = visibleNodes.findIndex((n) =>
+            state.selectedNodeIds.has(n.id),
+          );
+          let newTree = state.tree;
+          for (const id of idsToDelete) {
+            if (newTree.nodesById.has(id)) {
+              newTree = removeNode(newTree, id);
             }
+          }
+          actions.setTree(newTree);
+          const remaining = visibleNodes.filter(
+            (n) => !state.selectedNodeIds.has(n.id),
+          );
+          const nextSelect =
+            remaining.find((_, i) => {
+              const origIdx = visibleNodes.indexOf(remaining[i]);
+              return origIdx >= firstDeletedIdx;
+            }) ?? remaining[remaining.length - 1];
+          if (nextSelect) {
+            actions.selectNode(nextSelect.id);
+          } else {
+            actions.selectNode(null);
           }
           break;
         }
@@ -427,6 +471,7 @@ export function TreeView({
     [
       visibleNodes,
       state.selectedNodeId,
+      state.selectedNodeIds,
       state.expandedNodeIds,
       state.tree,
       actions,

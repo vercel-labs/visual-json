@@ -24,14 +24,14 @@ interface FormFieldProps {
   depth: number;
   showDescriptions: boolean;
   showCounts: boolean;
-  formSelectedNodeId: string | null;
+  formSelectedNodeIds: Set<string>;
   editingNodeId: string | null;
   collapsedIds: Set<string>;
   maxKeyLength: number;
   maxDepth: number;
   isFocused: boolean;
   dragState: DragState;
-  onSelect: (nodeId: string) => void;
+  onSelect: (nodeId: string, e: React.MouseEvent) => void;
   onToggleCollapse: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDragStart: (nodeId: string) => void;
@@ -72,7 +72,7 @@ function FormField({
   depth,
   showDescriptions,
   showCounts,
-  formSelectedNodeId,
+  formSelectedNodeIds,
   editingNodeId,
   collapsedIds,
   maxKeyLength,
@@ -90,7 +90,7 @@ function FormField({
   const { state, actions } = useStudio();
   const isContainer = node.type === "object" || node.type === "array";
   const collapsed = collapsedIds.has(node.id);
-  const isSelected = formSelectedNodeId === node.id;
+  const isSelected = formSelectedNodeIds.has(node.id);
   const isEditing = editingNodeId === node.id;
   const propSchema = getResolvedSchema(schema, rootSchema, node.path);
   const isRequired = checkRequired(node, schema, rootSchema);
@@ -98,7 +98,7 @@ function FormField({
 
   const isRoot = node.parentId === null;
   const isDragTarget = dragState.dropTargetNodeId === node.id;
-  const isDraggedNode = dragState.draggedNodeId === node.id;
+  const isDraggedNode = dragState.draggedNodeIds.has(node.id);
 
   function handleDragOverEvent(e: React.DragEvent) {
     e.preventDefault();
@@ -234,7 +234,7 @@ function FormField({
           }}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(node.id);
+            onSelect(node.id, e);
           }}
           onDoubleClick={() => onToggleCollapse(node.id)}
           onMouseEnter={() => setHovered(true)}
@@ -390,7 +390,7 @@ function FormField({
                 depth={depth + 1}
                 showDescriptions={showDescriptions}
                 showCounts={showCounts}
-                formSelectedNodeId={formSelectedNodeId}
+                formSelectedNodeIds={formSelectedNodeIds}
                 editingNodeId={editingNodeId}
                 collapsedIds={collapsedIds}
                 maxKeyLength={maxKeyLength}
@@ -446,7 +446,7 @@ function FormField({
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(node.id);
+        onSelect(node.id, e);
       }}
       onDoubleClick={() => onStartEditing(node.id)}
       onMouseEnter={() => setHovered(true)}
@@ -673,6 +673,10 @@ export function FormView({
   const [formSelectedNodeId, setFormSelectedNodeId] = useState<string | null>(
     null,
   );
+  const [formSelectedNodeIds, setFormSelectedNodeIds] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
+  const formAnchorRef = useRef<string | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const preEditTreeRef = useRef<typeof state.tree | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
@@ -682,14 +686,21 @@ export function FormView({
   const [isFocused, setIsFocused] = useState(false);
   const {
     dragState,
-    handleDragStart,
+    handleDragStart: rawDragStart,
     handleDragOver,
     handleDragEnd,
     handleDrop,
   } = useDragDrop();
 
+  const handleDragStart = useCallback(
+    (nodeId: string) => rawDragStart(nodeId, formSelectedNodeIds),
+    [rawDragStart, formSelectedNodeIds],
+  );
+
   useEffect(() => {
     setFormSelectedNodeId(null);
+    setFormSelectedNodeIds(new Set<string>());
+    formAnchorRef.current = null;
     setEditingNodeId(null);
     setCollapsedIds(new Set<string>());
   }, [displayNode.id]);
@@ -718,10 +729,53 @@ export function FormView({
     return { maxKeyLength: maxKey, maxDepth: maxD };
   }, [visibleNodes, displayNode.path, state.tree]);
 
-  const handleSelect = useCallback((nodeId: string) => {
-    setFormSelectedNodeId(nodeId);
-    setEditingNodeId(null);
-  }, []);
+  const handleSelect = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      setEditingNodeId(null);
+      if (e.shiftKey) {
+        const anchor = formAnchorRef.current;
+        if (!anchor) {
+          setFormSelectedNodeId(nodeId);
+          setFormSelectedNodeIds(new Set([nodeId]));
+          formAnchorRef.current = nodeId;
+          return;
+        }
+        const anchorIdx = visibleNodes.findIndex((n) => n.id === anchor);
+        const toIdx = visibleNodes.findIndex((n) => n.id === nodeId);
+        if (anchorIdx === -1 || toIdx === -1) {
+          setFormSelectedNodeId(nodeId);
+          setFormSelectedNodeIds(new Set([nodeId]));
+          formAnchorRef.current = nodeId;
+          return;
+        }
+        const start = Math.min(anchorIdx, toIdx);
+        const end = Math.max(anchorIdx, toIdx);
+        const rangeIds = new Set<string>();
+        for (let i = start; i <= end; i++) {
+          rangeIds.add(visibleNodes[i].id);
+        }
+        setFormSelectedNodeIds(rangeIds);
+        setFormSelectedNodeId(nodeId);
+      } else if (e.metaKey || e.ctrlKey) {
+        setFormSelectedNodeIds((prev) => {
+          const next = new Set(prev);
+          if (next.has(nodeId)) {
+            next.delete(nodeId);
+          } else {
+            next.add(nodeId);
+          }
+          return next;
+        });
+        setFormSelectedNodeId(nodeId);
+        formAnchorRef.current = nodeId;
+      } else {
+        setFormSelectedNodeId(nodeId);
+        setFormSelectedNodeIds(new Set([nodeId]));
+        formAnchorRef.current = nodeId;
+      }
+    },
+    [visibleNodes],
+  );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
     setCollapsedIds((prev) => {
@@ -783,6 +837,25 @@ export function FormView({
           e.preventDefault();
           const next = visibleNodes[currentIndex + 1];
           if (next) {
+            if (e.shiftKey) {
+              const anchor = formAnchorRef.current;
+              if (anchor) {
+                const anchorIdx = visibleNodes.findIndex(
+                  (n) => n.id === anchor,
+                );
+                const toIdx = visibleNodes.indexOf(next);
+                const start = Math.min(anchorIdx, toIdx);
+                const end = Math.max(anchorIdx, toIdx);
+                const rangeIds = new Set<string>();
+                for (let i = start; i <= end; i++) {
+                  rangeIds.add(visibleNodes[i].id);
+                }
+                setFormSelectedNodeIds(rangeIds);
+              }
+            } else {
+              setFormSelectedNodeIds(new Set([next.id]));
+              formAnchorRef.current = next.id;
+            }
             setFormSelectedNodeId(next.id);
             scrollToNode(next.id);
           }
@@ -792,6 +865,25 @@ export function FormView({
           e.preventDefault();
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
+            if (e.shiftKey) {
+              const anchor = formAnchorRef.current;
+              if (anchor) {
+                const anchorIdx = visibleNodes.findIndex(
+                  (n) => n.id === anchor,
+                );
+                const toIdx = visibleNodes.indexOf(prev);
+                const start = Math.min(anchorIdx, toIdx);
+                const end = Math.max(anchorIdx, toIdx);
+                const rangeIds = new Set<string>();
+                for (let i = start; i <= end; i++) {
+                  rangeIds.add(visibleNodes[i].id);
+                }
+                setFormSelectedNodeIds(rangeIds);
+              }
+            } else {
+              setFormSelectedNodeIds(new Set([prev.id]));
+              formAnchorRef.current = prev.id;
+            }
             setFormSelectedNodeId(prev.id);
             scrollToNode(prev.id);
           }
@@ -808,8 +900,11 @@ export function FormView({
                 return next;
               });
             } else if (node.children.length > 0) {
-              setFormSelectedNodeId(node.children[0].id);
-              scrollToNode(node.children[0].id);
+              const child = node.children[0];
+              setFormSelectedNodeId(child.id);
+              setFormSelectedNodeIds(new Set([child.id]));
+              formAnchorRef.current = child.id;
+              scrollToNode(child.id);
             }
           }
           break;
@@ -832,6 +927,8 @@ export function FormView({
             );
             if (parentInVisible) {
               setFormSelectedNodeId(parentInVisible.id);
+              setFormSelectedNodeIds(new Set([parentInVisible.id]));
+              formAnchorRef.current = parentInVisible.id;
               scrollToNode(parentInVisible.id);
             }
           }
@@ -841,6 +938,8 @@ export function FormView({
           e.preventDefault();
           if (formSelectedNodeId) {
             preEditTreeRef.current = state.tree;
+            setFormSelectedNodeIds(new Set([formSelectedNodeId]));
+            formAnchorRef.current = formSelectedNodeId;
             setEditingNodeId(formSelectedNodeId);
           }
           break;
@@ -853,18 +952,37 @@ export function FormView({
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const toDelete =
-            currentIndex >= 0 ? visibleNodes[currentIndex] : null;
-          if (toDelete && toDelete.parentId) {
-            const nextSelect =
-              visibleNodes[currentIndex + 1] ?? visibleNodes[currentIndex - 1];
-            const newTree = removeNode(state.tree, toDelete.id);
-            actions.setTree(newTree);
-            if (nextSelect && nextSelect.id !== toDelete.id) {
-              setFormSelectedNodeId(nextSelect.id);
-            } else {
-              setFormSelectedNodeId(null);
+          const idsToDelete = [...formSelectedNodeIds].filter((id) => {
+            const node = state.tree.nodesById.get(id);
+            return node && node.parentId !== null;
+          });
+          if (idsToDelete.length === 0) break;
+          const firstDeletedIdx = visibleNodes.findIndex((n) =>
+            formSelectedNodeIds.has(n.id),
+          );
+          let newTree = state.tree;
+          for (const id of idsToDelete) {
+            if (newTree.nodesById.has(id)) {
+              newTree = removeNode(newTree, id);
             }
+          }
+          actions.setTree(newTree);
+          const remaining = visibleNodes.filter(
+            (n) => !formSelectedNodeIds.has(n.id),
+          );
+          const nextSelect =
+            remaining.find((_, i) => {
+              const origIdx = visibleNodes.indexOf(remaining[i]);
+              return origIdx >= firstDeletedIdx;
+            }) ?? remaining[remaining.length - 1];
+          if (nextSelect) {
+            setFormSelectedNodeId(nextSelect.id);
+            setFormSelectedNodeIds(new Set([nextSelect.id]));
+            formAnchorRef.current = nextSelect.id;
+          } else {
+            setFormSelectedNodeId(null);
+            setFormSelectedNodeIds(new Set<string>());
+            formAnchorRef.current = null;
           }
           break;
         }
@@ -873,6 +991,7 @@ export function FormView({
     [
       visibleNodes,
       formSelectedNodeId,
+      formSelectedNodeIds,
       editingNodeId,
       collapsedIds,
       scrollToNode,
@@ -929,7 +1048,7 @@ export function FormView({
           depth={0}
           showDescriptions={showDescriptions}
           showCounts={showCounts}
-          formSelectedNodeId={formSelectedNodeId}
+          formSelectedNodeIds={formSelectedNodeIds}
           editingNodeId={editingNodeId}
           collapsedIds={collapsedIds}
           maxKeyLength={maxKeyLength}

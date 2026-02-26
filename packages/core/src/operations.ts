@@ -150,6 +150,26 @@ export function addProperty(
   });
 }
 
+export function insertProperty(
+  state: TreeState,
+  parentId: string,
+  key: string,
+  value: JsonValue,
+  index: number,
+): TreeState {
+  const parent = state.nodesById.get(parentId);
+  if (!parent) return state;
+
+  return clonePathToNode(state, parentId, (p) => {
+    const parentPath = p.path === "/" ? "" : p.path;
+    const nodesById = new Map<string, TreeNode>();
+    const newChild = buildSubtree(key, value, parentPath, p.id, nodesById);
+    const newChildren = [...p.children];
+    newChildren.splice(index, 0, newChild);
+    return reindexArrayChildren({ ...p, children: newChildren });
+  });
+}
+
 export function removeNode(state: TreeState, nodeId: string): TreeState {
   const node = state.nodesById.get(nodeId);
   if (!node || !node.parentId) return state;

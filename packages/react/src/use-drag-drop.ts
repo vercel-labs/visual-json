@@ -1,15 +1,22 @@
 import { useState, useCallback, useRef } from "react";
-import { reorderChildren, moveNode, isDescendant } from "@visual-json/core";
+import {
+  removeNode,
+  insertProperty,
+  isDescendant,
+  toJson,
+} from "@visual-json/core";
 import { useStudio } from "./context";
 
 export interface DragState {
-  draggedNodeId: string | null;
+  draggedNodeIds: Set<string>;
   dropTargetNodeId: string | null;
   dropPosition: "before" | "after" | null;
 }
 
+const EMPTY_SET = new Set<string>();
+
 const INITIAL_DRAG_STATE: DragState = {
-  draggedNodeId: null,
+  draggedNodeIds: EMPTY_SET,
   dropTargetNodeId: null,
   dropPosition: null,
 };
@@ -20,18 +27,34 @@ export function useDragDrop() {
   const dragStateRef = useRef<DragState>(dragState);
   dragStateRef.current = dragState;
 
-  const handleDragStart = useCallback((nodeId: string) => {
-    setDragState({
-      draggedNodeId: nodeId,
-      dropTargetNodeId: null,
-      dropPosition: null,
-    });
-  }, []);
+  const handleDragStart = useCallback(
+    (nodeId: string, selectedIds?: Set<string>) => {
+      let ids: Set<string>;
+      if (selectedIds && selectedIds.size > 0 && selectedIds.has(nodeId)) {
+        ids = selectedIds;
+      } else {
+        ids = new Set([nodeId]);
+      }
+      setDragState({
+        draggedNodeIds: ids,
+        dropTargetNodeId: null,
+        dropPosition: null,
+      });
+    },
+    [],
+  );
 
   const handleDragOver = useCallback(
     (nodeId: string, position: "before" | "after") => {
-      const draggedId = dragStateRef.current.draggedNodeId;
-      if (draggedId && isDescendant(state.tree, nodeId, draggedId)) return;
+      const draggedIds = dragStateRef.current.draggedNodeIds;
+      for (const draggedId of draggedIds) {
+        if (
+          nodeId === draggedId ||
+          isDescendant(state.tree, nodeId, draggedId)
+        ) {
+          return;
+        }
+      }
 
       setDragState((prev) => ({
         ...prev,
@@ -47,53 +70,92 @@ export function useDragDrop() {
   }, []);
 
   const handleDrop = useCallback(() => {
-    const { draggedNodeId, dropTargetNodeId, dropPosition } =
+    const { draggedNodeIds, dropTargetNodeId, dropPosition } =
       dragStateRef.current;
-    if (!draggedNodeId || !dropTargetNodeId || !dropPosition) return;
+    if (draggedNodeIds.size === 0 || !dropTargetNodeId || !dropPosition) return;
 
-    const draggedNode = state.tree.nodesById.get(draggedNodeId);
     const targetNode = state.tree.nodesById.get(dropTargetNodeId);
-    if (!draggedNode || !targetNode) return;
+    if (!targetNode || !targetNode.parentId) return;
 
-    // Prevent dropping a node into its own descendants
-    if (isDescendant(state.tree, dropTargetNodeId, draggedNodeId)) return;
+    for (const id of draggedNodeIds) {
+      if (isDescendant(state.tree, dropTargetNodeId, id)) return;
+    }
 
-    if (draggedNode.parentId && draggedNode.parentId === targetNode.parentId) {
-      const parent = state.tree.nodesById.get(draggedNode.parentId);
-      if (parent) {
-        const fromIndex = parent.children.findIndex(
-          (c) => c.id === draggedNodeId,
-        );
-        let toIndex = parent.children.findIndex(
-          (c) => c.id === dropTargetNodeId,
-        );
-        if (dropPosition === "after") toIndex++;
-        if (fromIndex < toIndex) toIndex--;
-        if (fromIndex !== toIndex && fromIndex >= 0 && toIndex >= 0) {
-          const newTree = reorderChildren(
-            state.tree,
-            parent.id,
-            fromIndex,
-            toIndex,
-          );
-          actions.setTree(newTree);
+    const targetParentId = targetNode.parentId;
+    const targetParent = state.tree.nodesById.get(targetParentId);
+    if (!targetParent) return;
+
+    const parentChildren = targetParent.children;
+    const orderedDragIds = parentChildren
+      .filter((c) => draggedNodeIds.has(c.id))
+      .map((c) => c.id);
+
+    const allSameParent =
+      orderedDragIds.length === draggedNodeIds.size &&
+      [...draggedNodeIds].every((id) => {
+        const n = state.tree.nodesById.get(id);
+        return n?.parentId === targetParentId;
+      });
+
+    if (allSameParent) {
+      const remaining = parentChildren.filter((c) => !draggedNodeIds.has(c.id));
+      let insertIdx = remaining.findIndex((c) => c.id === dropTargetNodeId);
+      if (insertIdx === -1) {
+        insertIdx = dropPosition === "after" ? remaining.length : 0;
+      } else {
+        if (dropPosition === "after") insertIdx++;
+      }
+      const dragged = orderedDragIds.map(
+        (id) => parentChildren.find((c) => c.id === id)!,
+      );
+      const newChildren = [...remaining];
+      newChildren.splice(insertIdx, 0, ...dragged);
+
+      const { clonePathToNode, reindexArrayChildren, rebuildMap } =
+        getInternals();
+      const newRoot = clonePathToNode(state.tree.root, targetParentId, (p) =>
+        reindexArrayChildren({ ...p, children: newChildren }),
+      );
+      actions.setTree({ root: newRoot, nodesById: rebuildMap(newRoot) });
+    } else {
+      const draggedData = [...draggedNodeIds]
+        .map((id) => state.tree.nodesById.get(id))
+        .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null)
+        .map((n) => ({ key: n.key, value: toJson(n) }));
+
+      let newTree = state.tree;
+      for (const id of draggedNodeIds) {
+        if (newTree.nodesById.has(id)) {
+          newTree = removeNode(newTree, id);
         }
       }
-    } else if (targetNode.parentId) {
-      const newParent = state.tree.nodesById.get(targetNode.parentId);
-      if (newParent) {
-        let toIndex = newParent.children.findIndex(
-          (c) => c.id === dropTargetNodeId,
-        );
-        if (dropPosition === "after") toIndex++;
-        const newTree = moveNode(
-          state.tree,
-          draggedNodeId,
-          newParent.id,
-          toIndex,
-        );
-        actions.setTree(newTree);
+
+      const updatedTarget = newTree.nodesById.get(dropTargetNodeId);
+      if (!updatedTarget || !updatedTarget.parentId) {
+        setDragState(INITIAL_DRAG_STATE);
+        return;
       }
+
+      const updatedParent = newTree.nodesById.get(updatedTarget.parentId)!;
+      let insertIdx = updatedParent.children.findIndex(
+        (c) => c.id === dropTargetNodeId,
+      );
+      if (dropPosition === "after") insertIdx++;
+
+      for (let i = 0; i < draggedData.length; i++) {
+        const { key, value } = draggedData[i];
+        const actualKey =
+          updatedParent.type === "array" ? String(insertIdx + i) : key;
+        newTree = insertProperty(
+          newTree,
+          updatedParent.id,
+          actualKey,
+          value,
+          insertIdx + i,
+        );
+      }
+
+      actions.setTree(newTree);
     }
 
     setDragState(INITIAL_DRAG_STATE);
@@ -106,4 +168,67 @@ export function useDragDrop() {
     handleDragEnd,
     handleDrop,
   };
+}
+
+import type { TreeNode, TreeState } from "@visual-json/core";
+
+function getInternals() {
+  function rebuildMap(root: TreeNode): Map<string, TreeNode> {
+    const map = new Map<string, TreeNode>();
+    function walk(node: TreeNode) {
+      map.set(node.id, node);
+      for (const child of node.children) walk(child);
+    }
+    walk(root);
+    return map;
+  }
+
+  function recomputePaths(node: TreeNode, newParentPath: string): TreeNode {
+    const newPath = newParentPath
+      ? `${newParentPath}/${node.key}`
+      : `/${node.key}`;
+    if (node.path === newPath && node.children.length === 0) return node;
+    return {
+      ...node,
+      path: newPath,
+      children: node.children.map((child) => recomputePaths(child, newPath)),
+    };
+  }
+
+  function reindexArrayChildren(parent: TreeNode): TreeNode {
+    if (parent.type !== "array") return parent;
+    const parentPath = parent.path === "/" ? "" : parent.path;
+    return {
+      ...parent,
+      children: parent.children.map((child, i) => {
+        const newKey = String(i);
+        if (child.key === newKey) return child;
+        return recomputePaths({ ...child, key: newKey }, parentPath);
+      }),
+    };
+  }
+
+  function clonePathToNode(
+    root: TreeNode,
+    targetId: string,
+    updater: (node: TreeNode) => TreeNode,
+  ): TreeNode {
+    if (root.id === targetId) return updater(root);
+    return {
+      ...root,
+      children: root.children.map((child) => {
+        if (child.id === targetId) return updater(child);
+        const hasTarget = findInSubtree(child, targetId);
+        if (hasTarget) return clonePathToNode(child, targetId, updater);
+        return child;
+      }),
+    };
+  }
+
+  function findInSubtree(node: TreeNode, targetId: string): boolean {
+    if (node.id === targetId) return true;
+    return node.children.some((c) => findInSubtree(c, targetId));
+  }
+
+  return { rebuildMap, reindexArrayChildren, clonePathToNode };
 }
