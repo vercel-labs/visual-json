@@ -23,6 +23,7 @@ export interface StudioState {
 export interface StudioActions {
   setTree: (tree: TreeState) => void;
   selectNode: (nodeId: string | null) => void;
+  selectAndDrillDown: (nodeId: string | null) => void;
   toggleNodeSelection: (nodeId: string) => void;
   selectNodeRange: (toNodeId: string, customVisibleNodes?: TreeNode[]) => void;
   setSelection: (

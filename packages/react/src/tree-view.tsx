@@ -10,7 +10,7 @@ import { useStudio } from "./context";
 import { ContextMenu, type ContextMenuEntry } from "./context-menu";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
-import { deleteSelectedNodes } from "./selection-utils";
+import { deleteSelectedNodes, computeSelectAllIds } from "./selection-utils";
 import {
   useDragDrop,
   setMultiDragImage,
@@ -97,8 +97,7 @@ function TreeNodeRow({
           } else if (e.metaKey || e.ctrlKey) {
             actions.toggleNodeSelection(node.id);
           } else {
-            actions.drillDown(node.id);
-            actions.selectNode(node.id);
+            actions.selectAndDrillDown(node.id);
           }
         }}
         onMouseEnter={() => setHovered(true)}
@@ -283,26 +282,31 @@ export function TreeView({
     [state.tree.root, state.expandedNodeIds],
   );
 
+  const visibleNodeIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    visibleNodes.forEach((n, i) => map.set(n.id, i));
+    return map;
+  }, [visibleNodes]);
+
   const normalizedDragOver = useCallback(
     (nodeId: string, position: "before" | "after") => {
       if (position === "before") {
-        const idx = visibleNodes.findIndex((n) => n.id === nodeId);
-        if (idx > 0) {
+        const idx = visibleNodeIndexMap.get(nodeId);
+        if (idx !== undefined && idx > 0) {
           handleDragOver(visibleNodes[idx - 1].id, "after");
           return;
         }
       }
       handleDragOver(nodeId, position);
     },
-    [visibleNodes, handleDragOver],
+    [visibleNodes, visibleNodeIndexMap, handleDragOver],
   );
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
       e.preventDefault();
       if (!state.selectedNodeIds.has(node.id)) {
-        actions.drillDown(node.id);
-        actions.selectNode(node.id);
+        actions.selectAndDrillDown(node.id);
       }
       setContextMenu({ x: e.clientX, y: e.clientY, node });
     },
@@ -461,9 +465,31 @@ export function TreeView({
           }
           break;
         }
+        case "a": {
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            const ids = computeSelectAllIds(
+              state.tree,
+              state.focusedNodeId,
+              state.selectedNodeIds,
+            );
+            if (ids) {
+              actions.setSelection(
+                state.focusedNodeId,
+                ids,
+                state.focusedNodeId,
+              );
+            }
+          }
+          break;
+        }
         case "Escape": {
           e.preventDefault();
-          actions.setSelection(null, new Set<string>(), null);
+          if (state.selectedNodeIds.size > 1 && state.focusedNodeId) {
+            actions.selectNode(state.focusedNodeId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
+          }
           break;
         }
         case "Delete":

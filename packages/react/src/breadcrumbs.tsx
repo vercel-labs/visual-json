@@ -49,8 +49,7 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
     (path: string) => {
       for (const [id, node] of state.tree.nodesById) {
         if (node.path === path) {
-          actions.drillDown(id);
-          actions.selectNode(id);
+          actions.selectAndDrillDown(id);
           break;
         }
       }

@@ -63,7 +63,7 @@ export function setMultiDragImage(e: React.DragEvent, count: number) {
   ].join(";");
   document.body.appendChild(ghost);
   e.dataTransfer.setDragImage(ghost, 0, 14);
-  setTimeout(() => ghost.remove(), 0);
+  requestAnimationFrame(() => ghost.remove());
 }
 
 export function useDragDrop() {

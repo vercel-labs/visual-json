@@ -448,7 +448,9 @@ test.describe("multi-select: Escape clears selection", () => {
     await page.waitForSelector(formSelector);
   });
 
-  test("Escape clears multi-selection in tree view", async ({ page }) => {
+  test("first Escape collapses multi-selection to focused node, second clears", async ({
+    page,
+  }) => {
     const mod = process.platform === "darwin" ? "Meta" : "Control";
 
     await treeItem(page, "name").click();
@@ -457,11 +459,21 @@ test.describe("multi-select: Escape clears selection", () => {
 
     await page.locator(treeSelector).press("Escape");
 
-    const selected = await selectedTreeItems(page);
-    expect(selected).toHaveLength(0);
+    const afterFirst = await selectedTreeItems(page);
+    expect(afterFirst).toHaveLength(1);
+    await expect(
+      page.locator(`${treeSelector} [role='treeitem'][aria-selected='true']`),
+    ).toContainText("version");
+
+    await page.locator(treeSelector).press("Escape");
+
+    const afterSecond = await selectedTreeItems(page);
+    expect(afterSecond).toHaveLength(0);
   });
 
-  test("Escape clears multi-selection in form view", async ({ page }) => {
+  test("first Escape collapses form multi-selection to focused node, second clears", async ({
+    page,
+  }) => {
     const mod = process.platform === "darwin" ? "Meta" : "Control";
 
     await treeItem(page, "/").click();
@@ -476,14 +488,25 @@ test.describe("multi-select: Escape clears selection", () => {
 
     await page.locator(formSelector).press("Escape");
 
-    const nameBgAfter = await formRow(page, "name").evaluate(
+    const nameBgAfterFirst = await formRow(page, "name").evaluate(
       (el) => getComputedStyle(el).backgroundColor,
     );
-    const versionBgAfter = await formRow(page, "version").evaluate(
+    const versionBgAfterFirst = await formRow(page, "version").evaluate(
       (el) => getComputedStyle(el).backgroundColor,
     );
-    expect(nameBgAfter).toBe("rgba(0, 0, 0, 0)");
-    expect(versionBgAfter).toBe("rgba(0, 0, 0, 0)");
+    expect(nameBgAfterFirst).toBe("rgba(0, 0, 0, 0)");
+    expect(versionBgAfterFirst).not.toBe("rgba(0, 0, 0, 0)");
+
+    await page.locator(formSelector).press("Escape");
+
+    const nameBgAfterSecond = await formRow(page, "name").evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    const versionBgAfterSecond = await formRow(page, "version").evaluate(
+      (el) => getComputedStyle(el).backgroundColor,
+    );
+    expect(nameBgAfterSecond).toBe("rgba(0, 0, 0, 0)");
+    expect(versionBgAfterSecond).toBe("rgba(0, 0, 0, 0)");
   });
 
   test("Escape while editing in form reverts edit without clearing edit state", async ({
@@ -503,5 +526,56 @@ test.describe("multi-select: Escape clears selection", () => {
     await expect(
       page.locator(`${formSelector} input[value='changed-value']`),
     ).toHaveCount(0);
+  });
+});
+
+test.describe("multi-select: Cmd+A select all", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+    await page.waitForSelector(formSelector);
+  });
+
+  test("Cmd+A in tree selects all siblings at the focused level", async ({
+    page,
+  }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "name").click();
+    await page.locator(treeSelector).press(`${mod}+a`);
+
+    const selected = await selectedTreeItems(page);
+    expect(selected.length).toBeGreaterThanOrEqual(7);
+  });
+
+  test("pressing Cmd+A again when all siblings selected expands to parent level", async ({
+    page,
+  }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "scripts").click();
+    await page.locator(treeSelector).press("ArrowRight");
+
+    await treeItem(page, "dev").click();
+    await page.locator(treeSelector).press(`${mod}+a`);
+
+    const firstSelected = await selectedTreeItems(page);
+    const firstCount = firstSelected.length;
+
+    await page.locator(treeSelector).press(`${mod}+a`);
+
+    const secondSelected = await selectedTreeItems(page);
+    expect(secondSelected.length).toBeGreaterThan(firstCount);
+  });
+
+  test("Cmd+A in form selects all visible siblings", async ({ page }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "/").click();
+    await formRow(page, "name").click();
+    await page.locator(formSelector).press(`${mod}+a`);
+
+    const selected = await selectedTreeItems(page);
+    expect(selected.length).toBeGreaterThanOrEqual(7);
   });
 });

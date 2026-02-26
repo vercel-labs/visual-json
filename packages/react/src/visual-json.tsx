@@ -177,6 +177,16 @@ export function VisualJson({
     [setSelectedNodeIds, setAnchorNodeId],
   );
 
+  const selectAndDrillDown = useCallback(
+    (nodeId: string | null) => {
+      setDrillDownNodeId(nodeId);
+      setFocusedNodeId(nodeId);
+      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
+      setAnchorNodeId(nodeId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
   const toggleNodeSelection = useCallback(
     (nodeId: string) => {
       const next = new Set(selectedNodeIdsRef.current);
@@ -372,6 +382,7 @@ export function VisualJson({
     () => ({
       setTree,
       selectNode,
+      selectAndDrillDown,
       toggleNodeSelection,
       selectNodeRange,
       setSelection,
@@ -392,6 +403,7 @@ export function VisualJson({
     [
       setTree,
       selectNode,
+      selectAndDrillDown,
       toggleNodeSelection,
       selectNodeRange,
       setSelection,

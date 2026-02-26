@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { fromJson, resetIdCounter } from "@visual-json/core";
 import { getVisibleNodes } from "../get-visible-nodes";
-import { computeRangeIds, deleteSelectedNodes } from "../selection-utils";
+import {
+  computeRangeIds,
+  computeSelectAllIds,
+  deleteSelectedNodes,
+} from "../selection-utils";
 
 beforeEach(() => {
   resetIdCounter();
@@ -145,5 +149,64 @@ describe("deleteSelectedNodes", () => {
     expect(newTree.nodesById.has(deep.id)).toBe(false);
     expect(newTree.nodesById.has(after.id)).toBe(true);
     expect(nextFocusId).toBe(after.id);
+  });
+});
+
+describe("computeSelectAllIds", () => {
+  it("selects all siblings at the focused node's level", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3 });
+    const [a, b, c] = state.root.children;
+    const result = computeSelectAllIds(state, b.id, new Set([b.id]));
+    expect(result).toEqual(new Set([a.id, b.id, c.id]));
+  });
+
+  it("goes up a level when all siblings are already selected", () => {
+    const state = fromJson({ obj: { x: 1, y: 2 }, other: 3 });
+    const obj = state.root.children[0];
+    const other = state.root.children[1];
+    const [x, y] = obj.children;
+    const result = computeSelectAllIds(state, x.id, new Set([x.id, y.id]));
+    expect(result).toEqual(new Set([obj.id, other.id]));
+  });
+
+  it("stays at root level when everything is selected", () => {
+    const state = fromJson({ a: 1, b: 2 });
+    const [a, b] = state.root.children;
+    const result = computeSelectAllIds(state, a.id, new Set([a.id, b.id]));
+    expect(result).toEqual(new Set([a.id, b.id]));
+  });
+
+  it("returns null when focusedNodeId is null", () => {
+    const state = fromJson({ a: 1 });
+    const result = computeSelectAllIds(state, null, new Set());
+    expect(result).toBeNull();
+  });
+
+  it("returns null when focusedNodeId is not in the tree", () => {
+    const state = fromJson({ a: 1 });
+    const result = computeSelectAllIds(state, "nonexistent", new Set());
+    expect(result).toBeNull();
+  });
+
+  it("selects single child when focused on the only child", () => {
+    const state = fromJson({ wrapper: { only: 1 } });
+    const only = state.root.children[0].children[0];
+    const result = computeSelectAllIds(state, only.id, new Set());
+    expect(result).toEqual(new Set([only.id]));
+  });
+
+  it("escalates through multiple levels", () => {
+    const state = fromJson({ obj: { inner: { a: 1 } }, sibling: 2 });
+    const obj = state.root.children[0];
+    const sibling = state.root.children[1];
+    const inner = obj.children[0];
+    const a = inner.children[0];
+    // a is the only child of inner, inner is the only child of obj
+    // First call: all siblings of a selected (just a) -> go up -> inner is only child -> go up -> [obj, sibling]
+    const result = computeSelectAllIds(state, a.id, new Set([a.id]));
+    expect(result).toEqual(new Set([inner.id]));
+
+    const result2 = computeSelectAllIds(state, a.id, new Set([a.id, inner.id]));
+    expect(result2).toEqual(new Set([obj.id, sibling.id]));
   });
 });
