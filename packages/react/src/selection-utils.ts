@@ -24,7 +24,13 @@ export function deleteSelectedNodes(
 ): { newTree: TreeState; nextFocusId: string | null } {
   const idsToDelete = [...selectedIds].filter((id) => {
     const node = tree.nodesById.get(id);
-    return node && node.parentId !== null;
+    if (!node || node.parentId === null) return false;
+    let cur = tree.nodesById.get(node.parentId);
+    while (cur) {
+      if (selectedIds.has(cur.id)) return false;
+      cur = cur.parentId ? tree.nodesById.get(cur.parentId) : undefined;
+    }
+    return true;
   });
 
   if (idsToDelete.length === 0) return { newTree: tree, nextFocusId: null };

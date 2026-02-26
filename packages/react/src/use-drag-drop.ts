@@ -148,6 +148,9 @@ export function useDragDrop() {
       );
       if (dropPosition === "after") insertIdx++;
 
+      // Each insertProperty rebuilds the tree, but the parent's node ID is
+      // stable across rebuilds—insertProperty looks up the ID in the new
+      // tree's nodesById map, so we don't need to re-fetch the parent.
       for (let i = 0; i < draggedData.length; i++) {
         const { key, value } = draggedData[i];
         const actualKey =

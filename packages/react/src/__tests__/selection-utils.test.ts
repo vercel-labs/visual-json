@@ -106,4 +106,44 @@ describe("deleteSelectedNodes", () => {
     );
     expect(newTree).toBe(state);
   });
+
+  it("skips descendants when parent is also selected", () => {
+    const state = fromJson({ obj: { child: 1 }, after: 2 });
+    const visible = getVisibleNodes(state.root, () => true);
+    const obj = state.root.children[0];
+    const child = obj.children[0];
+    const after = state.root.children[1];
+
+    const { newTree, nextFocusId } = deleteSelectedNodes(
+      state,
+      new Set([obj.id, child.id]),
+      visible,
+    );
+
+    expect(newTree.nodesById.has(obj.id)).toBe(false);
+    expect(newTree.nodesById.has(child.id)).toBe(false);
+    expect(newTree.nodesById.has(after.id)).toBe(true);
+    expect(nextFocusId).toBe(after.id);
+  });
+
+  it("skips deeply nested descendants when ancestor is selected", () => {
+    const state = fromJson({ obj: { inner: { deep: 1 } }, after: 2 });
+    const visible = getVisibleNodes(state.root, () => true);
+    const obj = state.root.children[0];
+    const inner = obj.children[0];
+    const deep = inner.children[0];
+    const after = state.root.children[1];
+
+    const { newTree, nextFocusId } = deleteSelectedNodes(
+      state,
+      new Set([obj.id, deep.id]),
+      visible,
+    );
+
+    expect(newTree.nodesById.has(obj.id)).toBe(false);
+    expect(newTree.nodesById.has(inner.id)).toBe(false);
+    expect(newTree.nodesById.has(deep.id)).toBe(false);
+    expect(newTree.nodesById.has(after.id)).toBe(true);
+    expect(nextFocusId).toBe(after.id);
+  });
 });

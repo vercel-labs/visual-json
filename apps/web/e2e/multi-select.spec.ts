@@ -299,6 +299,75 @@ test.describe("multi-select: form view", () => {
   });
 });
 
+test.describe("multi-select: keyboard nav preserves form root", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+    await page.waitForSelector(formSelector);
+  });
+
+  test("ArrowDown in tree does not change the breadcrumb path", async ({
+    page,
+  }) => {
+    await treeItem(page, "scripts").click();
+
+    const formWrapper = page.locator(`${formSelector}`).locator("..");
+    const bcInput = formWrapper.locator("input").first();
+    const pathBefore = await bcInput.inputValue();
+
+    await page.locator(treeSelector).press("ArrowDown");
+    await page.locator(treeSelector).press("ArrowDown");
+    await page.locator(treeSelector).press("ArrowDown");
+
+    const pathAfter = await bcInput.inputValue();
+    expect(pathAfter).toBe(pathBefore);
+  });
+
+  test("ArrowUp in tree does not change the breadcrumb path", async ({
+    page,
+  }) => {
+    await treeItem(page, "dependencies").click();
+
+    const formWrapper = page.locator(`${formSelector}`).locator("..");
+    const bcInput = formWrapper.locator("input").first();
+    const pathBefore = await bcInput.inputValue();
+
+    await page.locator(treeSelector).press("ArrowUp");
+    await page.locator(treeSelector).press("ArrowUp");
+
+    const pathAfter = await bcInput.inputValue();
+    expect(pathAfter).toBe(pathBefore);
+  });
+});
+
+test.describe("multi-select: tree delete edge cases", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+  });
+
+  test("deleting all children leaves the root visible", async ({ page }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "name").click();
+    await treeItem(page, "version").click({ modifiers: [mod] });
+    await treeItem(page, "private").click({ modifiers: [mod] });
+    await treeItem(page, "scripts").click({ modifiers: [mod] });
+    await treeItem(page, "dependencies").click({ modifiers: [mod] });
+    await treeItem(page, "devDependencies").click({ modifiers: [mod] });
+    await treeItem(page, "engines").click({ modifiers: [mod] });
+
+    await page.locator(treeSelector).press("Delete");
+
+    const root = treeItem(page, "/");
+    await expect(root).toBeVisible();
+    const remaining = await page
+      .locator(`${treeSelector} [role='treeitem']`)
+      .all();
+    expect(remaining).toHaveLength(1);
+  });
+});
+
 test.describe("multi-select: cross-view sync", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");

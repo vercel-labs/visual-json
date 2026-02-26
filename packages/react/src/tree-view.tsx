@@ -93,6 +93,7 @@ function TreeNodeRow({
           } else if (e.metaKey || e.ctrlKey) {
             actions.toggleNodeSelection(node.id);
           } else {
+            actions.drillDown(node.id);
             actions.selectNode(node.id);
           }
         }}
@@ -275,6 +276,7 @@ export function TreeView({
     (e: React.MouseEvent, node: TreeNode) => {
       e.preventDefault();
       if (!state.selectedNodeIds.has(node.id)) {
+        actions.drillDown(node.id);
         actions.selectNode(node.id);
       }
       setContextMenu({ x: e.clientX, y: e.clientY, node });
@@ -444,7 +446,11 @@ export function TreeView({
           );
           if (newTree === state.tree) break;
           actions.setTree(newTree);
-          actions.selectNode(nextFocusId);
+          if (nextFocusId) {
+            actions.selectNode(nextFocusId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
+          }
           break;
         }
       }

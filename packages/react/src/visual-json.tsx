@@ -45,9 +45,14 @@ export function VisualJson({
 }: VisualJsonProps) {
   const [tree, setTreeState] = useState<TreeState>(() => fromJson(value));
   const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
+  const [selectedNodeIds, setSelectedNodeIdsState] = useState<Set<string>>(
     () => new Set<string>(),
   );
+  const selectedNodeIdsRef = useRef<Set<string>>(new Set());
+  const setSelectedNodeIds = useCallback((ids: Set<string>) => {
+    selectedNodeIdsRef.current = ids;
+    setSelectedNodeIdsState(ids);
+  }, []);
   const anchorNodeIdRef = useRef<string | null>(null);
   const [anchorNodeId, setAnchorNodeIdState] = useState<string | null>(null);
   const [drillDownNodeId, setDrillDownNodeId] = useState<string | null>(null);
@@ -163,39 +168,38 @@ export function VisualJson({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  const selectNode = useCallback((nodeId: string | null) => {
-    setFocusedNodeId(nodeId);
-    setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
-    setAnchorNodeId(nodeId);
-    setDrillDownNodeId(nodeId);
-  }, []);
+  const selectNode = useCallback(
+    (nodeId: string | null) => {
+      setFocusedNodeId(nodeId);
+      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
+      setAnchorNodeId(nodeId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
 
-  const toggleNodeSelection = useCallback((nodeId: string) => {
-    const becameEmpty = { current: false };
-    setSelectedNodeIds((prev) => {
-      const next = new Set(prev);
+  const toggleNodeSelection = useCallback(
+    (nodeId: string) => {
+      const next = new Set(selectedNodeIdsRef.current);
       if (next.has(nodeId)) {
         next.delete(nodeId);
-        if (next.size === 0) {
-          becameEmpty.current = true;
-          return next;
-        }
       } else {
         next.add(nodeId);
       }
-      return next;
-    });
-    if (becameEmpty.current) {
-      setFocusedNodeId(null);
-      setAnchorNodeId(null);
-    } else {
-      setFocusedNodeId(nodeId);
-      setAnchorNodeId(nodeId);
-    }
-  }, []);
+      setSelectedNodeIds(next);
+      if (next.size === 0) {
+        setFocusedNodeId(null);
+        setAnchorNodeId(null);
+      } else {
+        setFocusedNodeId(nodeId);
+        setAnchorNodeId(nodeId);
+      }
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
 
   const selectNodeRange = useCallback(
-    (toNodeId: string) => {
+    (toNodeId: string, customVisibleNodes?: TreeNode[]) => {
+      const nodes = customVisibleNodes ?? visibleNodes;
       const anchor = anchorNodeIdRef.current;
       if (!anchor) {
         setFocusedNodeId(toNodeId);
@@ -203,7 +207,7 @@ export function VisualJson({
         setAnchorNodeId(toNodeId);
         return;
       }
-      const rangeIds = computeRangeIds(visibleNodes, anchor, toNodeId);
+      const rangeIds = computeRangeIds(nodes, anchor, toNodeId);
       if (!rangeIds) {
         setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
@@ -213,7 +217,7 @@ export function VisualJson({
       setSelectedNodeIds(rangeIds);
       setFocusedNodeId(toNodeId);
     },
-    [visibleNodes, setAnchorNodeId],
+    [visibleNodes, setSelectedNodeIds, setAnchorNodeId],
   );
 
   const setSelection = useCallback(
@@ -226,7 +230,7 @@ export function VisualJson({
       setSelectedNodeIds(newSelectedIds);
       setAnchorNodeId(newAnchorId);
     },
-    [],
+    [setSelectedNodeIds, setAnchorNodeId],
   );
 
   const drillDown = useCallback((nodeId: string | null) => {

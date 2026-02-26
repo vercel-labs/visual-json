@@ -1,5 +1,10 @@
 import { createContext, useContext } from "react";
-import type { TreeState, JsonSchema, SearchMatch } from "@visual-json/core";
+import type {
+  TreeState,
+  TreeNode,
+  JsonSchema,
+  SearchMatch,
+} from "@visual-json/core";
 
 export interface StudioState {
   tree: TreeState;
@@ -19,7 +24,7 @@ export interface StudioActions {
   setTree: (tree: TreeState) => void;
   selectNode: (nodeId: string | null) => void;
   toggleNodeSelection: (nodeId: string) => void;
-  selectNodeRange: (toNodeId: string) => void;
+  selectNodeRange: (toNodeId: string, customVisibleNodes?: TreeNode[]) => void;
   setSelection: (
     focusedId: string | null,
     selectedIds: Set<string>,

@@ -15,7 +15,7 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { EnumInput } from "./enum-input";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
-import { computeRangeIds, deleteSelectedNodes } from "./selection-utils";
+import { deleteSelectedNodes } from "./selection-utils";
 import { useDragDrop, type DragState } from "./use-drag-drop";
 
 interface FormFieldProps {
@@ -721,24 +721,14 @@ export function FormView({
     (nodeId: string, e: React.MouseEvent) => {
       setEditingNodeId(null);
       if (e.shiftKey) {
-        const anchor = state.anchorNodeId;
-        if (!anchor) {
-          actions.setSelection(nodeId, new Set([nodeId]), nodeId);
-          return;
-        }
-        const rangeIds = computeRangeIds(visibleNodes, anchor, nodeId);
-        if (!rangeIds) {
-          actions.setSelection(nodeId, new Set([nodeId]), nodeId);
-          return;
-        }
-        actions.setSelection(nodeId, rangeIds, anchor);
+        actions.selectNodeRange(nodeId, visibleNodes);
       } else if (e.metaKey || e.ctrlKey) {
         actions.toggleNodeSelection(nodeId);
       } else {
-        actions.setSelection(nodeId, new Set([nodeId]), nodeId);
+        actions.selectNode(nodeId);
       }
     },
-    [visibleNodes, state.anchorNodeId, actions],
+    [visibleNodes, actions],
   );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
@@ -769,13 +759,6 @@ export function FormView({
       el?.scrollIntoView({ block: "nearest" });
     });
   }, []);
-
-  const selectFormNode = useCallback(
-    (nodeId: string) => {
-      actions.setSelection(nodeId, new Set([nodeId]), nodeId);
-    },
-    [actions],
-  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -812,15 +795,9 @@ export function FormView({
           const next = visibleNodes[currentIndex + 1];
           if (next) {
             if (e.shiftKey) {
-              const anchor = state.anchorNodeId;
-              if (anchor) {
-                const rangeIds = computeRangeIds(visibleNodes, anchor, next.id);
-                if (rangeIds) {
-                  actions.setSelection(next.id, rangeIds, anchor);
-                }
-              }
+              actions.selectNodeRange(next.id, visibleNodes);
             } else {
-              selectFormNode(next.id);
+              actions.selectNode(next.id);
             }
             scrollToNode(next.id);
           }
@@ -831,15 +808,9 @@ export function FormView({
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
             if (e.shiftKey) {
-              const anchor = state.anchorNodeId;
-              if (anchor) {
-                const rangeIds = computeRangeIds(visibleNodes, anchor, prev.id);
-                if (rangeIds) {
-                  actions.setSelection(prev.id, rangeIds, anchor);
-                }
-              }
+              actions.selectNodeRange(prev.id, visibleNodes);
             } else {
-              selectFormNode(prev.id);
+              actions.selectNode(prev.id);
             }
             scrollToNode(prev.id);
           }
@@ -856,7 +827,7 @@ export function FormView({
                 return next;
               });
             } else if (node.children.length > 0) {
-              selectFormNode(node.children[0].id);
+              actions.selectNode(node.children[0].id);
               scrollToNode(node.children[0].id);
             }
           }
@@ -879,7 +850,7 @@ export function FormView({
               (n) => n.id === current.parentId,
             );
             if (parentInVisible) {
-              selectFormNode(parentInVisible.id);
+              actions.selectNode(parentInVisible.id);
               scrollToNode(parentInVisible.id);
             }
           }
@@ -889,11 +860,7 @@ export function FormView({
           e.preventDefault();
           if (state.focusedNodeId) {
             preEditTreeRef.current = state.tree;
-            actions.setSelection(
-              state.focusedNodeId,
-              new Set([state.focusedNodeId]),
-              state.focusedNodeId,
-            );
+            actions.selectNode(state.focusedNodeId);
             setEditingNodeId(state.focusedNodeId);
           }
           break;
@@ -914,7 +881,7 @@ export function FormView({
           if (newTree === state.tree) break;
           actions.setTree(newTree);
           if (nextFocusId) {
-            selectFormNode(nextFocusId);
+            actions.selectNode(nextFocusId);
           } else {
             actions.setSelection(null, new Set<string>(), null);
           }
@@ -925,12 +892,10 @@ export function FormView({
     [
       visibleNodes,
       state.focusedNodeId,
-      state.anchorNodeId,
       state.selectedNodeIds,
       editingNodeId,
       collapsedIds,
       scrollToNode,
-      selectFormNode,
       state.tree,
       actions,
     ],
