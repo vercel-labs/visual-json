@@ -2,8 +2,10 @@ import { useState, useCallback, useRef } from "react";
 import {
   removeNode,
   insertProperty,
+  reorderChildrenMulti,
   isDescendant,
   toJson,
+  type TreeNode,
 } from "@visual-json/core";
 import { useStudio } from "./context";
 
@@ -20,6 +22,16 @@ const INITIAL_DRAG_STATE: DragState = {
   dropTargetNodeId: null,
   dropPosition: null,
 };
+
+function sortByTreeOrder(root: TreeNode, ids: Set<string>): string[] {
+  const result: string[] = [];
+  function walk(node: TreeNode) {
+    if (ids.has(node.id)) result.push(node.id);
+    for (const child of node.children) walk(child);
+  }
+  walk(root);
+  return result;
+}
 
 export function useDragDrop() {
   const { state, actions } = useStudio();
@@ -98,27 +110,17 @@ export function useDragDrop() {
       });
 
     if (allSameParent) {
-      const remaining = parentChildren.filter((c) => !draggedNodeIds.has(c.id));
-      let insertIdx = remaining.findIndex((c) => c.id === dropTargetNodeId);
-      if (insertIdx === -1) {
-        insertIdx = dropPosition === "after" ? remaining.length : 0;
-      } else {
-        if (dropPosition === "after") insertIdx++;
-      }
-      const dragged = orderedDragIds.map(
-        (id) => parentChildren.find((c) => c.id === id)!,
+      const newTree = reorderChildrenMulti(
+        state.tree,
+        targetParentId,
+        orderedDragIds,
+        dropTargetNodeId,
+        dropPosition,
       );
-      const newChildren = [...remaining];
-      newChildren.splice(insertIdx, 0, ...dragged);
-
-      const { clonePathToNode, reindexArrayChildren, rebuildMap } =
-        getInternals();
-      const newRoot = clonePathToNode(state.tree.root, targetParentId, (p) =>
-        reindexArrayChildren({ ...p, children: newChildren }),
-      );
-      actions.setTree({ root: newRoot, nodesById: rebuildMap(newRoot) });
+      actions.setTree(newTree);
     } else {
-      const draggedData = [...draggedNodeIds]
+      const orderedIds = sortByTreeOrder(state.tree.root, draggedNodeIds);
+      const draggedData = orderedIds
         .map((id) => state.tree.nodesById.get(id))
         .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null)
         .map((n) => ({ key: n.key, value: toJson(n) }));
@@ -168,67 +170,4 @@ export function useDragDrop() {
     handleDragEnd,
     handleDrop,
   };
-}
-
-import type { TreeNode, TreeState } from "@visual-json/core";
-
-function getInternals() {
-  function rebuildMap(root: TreeNode): Map<string, TreeNode> {
-    const map = new Map<string, TreeNode>();
-    function walk(node: TreeNode) {
-      map.set(node.id, node);
-      for (const child of node.children) walk(child);
-    }
-    walk(root);
-    return map;
-  }
-
-  function recomputePaths(node: TreeNode, newParentPath: string): TreeNode {
-    const newPath = newParentPath
-      ? `${newParentPath}/${node.key}`
-      : `/${node.key}`;
-    if (node.path === newPath && node.children.length === 0) return node;
-    return {
-      ...node,
-      path: newPath,
-      children: node.children.map((child) => recomputePaths(child, newPath)),
-    };
-  }
-
-  function reindexArrayChildren(parent: TreeNode): TreeNode {
-    if (parent.type !== "array") return parent;
-    const parentPath = parent.path === "/" ? "" : parent.path;
-    return {
-      ...parent,
-      children: parent.children.map((child, i) => {
-        const newKey = String(i);
-        if (child.key === newKey) return child;
-        return recomputePaths({ ...child, key: newKey }, parentPath);
-      }),
-    };
-  }
-
-  function clonePathToNode(
-    root: TreeNode,
-    targetId: string,
-    updater: (node: TreeNode) => TreeNode,
-  ): TreeNode {
-    if (root.id === targetId) return updater(root);
-    return {
-      ...root,
-      children: root.children.map((child) => {
-        if (child.id === targetId) return updater(child);
-        const hasTarget = findInSubtree(child, targetId);
-        if (hasTarget) return clonePathToNode(child, targetId, updater);
-        return child;
-      }),
-    };
-  }
-
-  function findInSubtree(node: TreeNode, targetId: string): boolean {
-    if (node.id === targetId) return true;
-    return node.children.some((c) => findInSubtree(c, targetId));
-  }
-
-  return { rebuildMap, reindexArrayChildren, clonePathToNode };
 }

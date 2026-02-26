@@ -10,8 +10,8 @@ const DROPDOWN_MAX_HEIGHT = 200;
 
 export function Breadcrumbs({ className }: BreadcrumbsProps) {
   const { state, actions } = useStudio();
-  const selectedNode = state.selectedNodeId
-    ? state.tree.nodesById.get(state.selectedNodeId)
+  const selectedNode = state.focusedNodeId
+    ? state.tree.nodesById.get(state.focusedNodeId)
     : null;
 
   const currentPath = selectedNode?.path ?? "/";

@@ -3,7 +3,7 @@ import type { TreeState, JsonSchema, SearchMatch } from "@visual-json/core";
 
 export interface StudioState {
   tree: TreeState;
-  selectedNodeId: string | null;
+  focusedNodeId: string | null;
   selectedNodeIds: Set<string>;
   expandedNodeIds: Set<string>;
   schema: JsonSchema | null;

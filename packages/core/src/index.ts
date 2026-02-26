@@ -30,6 +30,7 @@ export {
   removeNode,
   moveNode,
   reorderChildren,
+  reorderChildrenMulti,
   changeType,
   duplicateNode,
 } from "./operations";

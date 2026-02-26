@@ -1,0 +1,58 @@
+import { removeNode, type TreeNode, type TreeState } from "@visual-json/core";
+
+export function computeRangeIds(
+  visibleNodes: TreeNode[],
+  anchorId: string,
+  targetId: string,
+): Set<string> | null {
+  const anchorIdx = visibleNodes.findIndex((n) => n.id === anchorId);
+  const targetIdx = visibleNodes.findIndex((n) => n.id === targetId);
+  if (anchorIdx === -1 || targetIdx === -1) return null;
+  const start = Math.min(anchorIdx, targetIdx);
+  const end = Math.max(anchorIdx, targetIdx);
+  const ids = new Set<string>();
+  for (let i = start; i <= end; i++) {
+    ids.add(visibleNodes[i].id);
+  }
+  return ids;
+}
+
+export function deleteSelectedNodes(
+  tree: TreeState,
+  selectedIds: Set<string>,
+  visibleNodes: TreeNode[],
+): { newTree: TreeState; nextFocusId: string | null } {
+  const idsToDelete = [...selectedIds].filter((id) => {
+    const node = tree.nodesById.get(id);
+    return node && node.parentId !== null;
+  });
+
+  if (idsToDelete.length === 0) return { newTree: tree, nextFocusId: null };
+
+  const firstDeletedIdx = visibleNodes.findIndex((n) => selectedIds.has(n.id));
+
+  let newTree = tree;
+  for (const id of idsToDelete) {
+    if (newTree.nodesById.has(id)) {
+      newTree = removeNode(newTree, id);
+    }
+  }
+
+  let nextFocusId: string | null = null;
+  for (let i = firstDeletedIdx; i < visibleNodes.length; i++) {
+    if (!selectedIds.has(visibleNodes[i].id)) {
+      nextFocusId = visibleNodes[i].id;
+      break;
+    }
+  }
+  if (!nextFocusId) {
+    for (let i = firstDeletedIdx - 1; i >= 0; i--) {
+      if (!selectedIds.has(visibleNodes[i].id)) {
+        nextFocusId = visibleNodes[i].id;
+        break;
+      }
+    }
+  }
+
+  return { newTree, nextFocusId };
+}

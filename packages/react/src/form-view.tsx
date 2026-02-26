@@ -15,6 +15,7 @@ import { Breadcrumbs } from "./breadcrumbs";
 import { EnumInput } from "./enum-input";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
+import { computeRangeIds, deleteSelectedNodes } from "./selection-utils";
 import { useDragDrop, type DragState } from "./use-drag-drop";
 
 interface FormFieldProps {
@@ -665,14 +666,12 @@ export function FormView({
 }: FormViewProps) {
   const { state, actions } = useStudio();
   const rootSchema = state.schema ?? undefined;
-  const selectedNode = state.selectedNodeId
-    ? state.tree.nodesById.get(state.selectedNodeId)
+  const selectedNode = state.focusedNodeId
+    ? state.tree.nodesById.get(state.focusedNodeId)
     : null;
   const displayNode = selectedNode ?? state.tree.root;
 
-  const [formSelectedNodeId, setFormSelectedNodeId] = useState<string | null>(
-    null,
-  );
+  const [formFocusedId, setFormFocusedId] = useState<string | null>(null);
   const [formSelectedNodeIds, setFormSelectedNodeIds] = useState<Set<string>>(
     () => new Set<string>(),
   );
@@ -698,7 +697,7 @@ export function FormView({
   );
 
   useEffect(() => {
-    setFormSelectedNodeId(null);
+    setFormFocusedId(null);
     setFormSelectedNodeIds(new Set<string>());
     formAnchorRef.current = null;
     setEditingNodeId(null);
@@ -735,27 +734,20 @@ export function FormView({
       if (e.shiftKey) {
         const anchor = formAnchorRef.current;
         if (!anchor) {
-          setFormSelectedNodeId(nodeId);
+          setFormFocusedId(nodeId);
           setFormSelectedNodeIds(new Set([nodeId]));
           formAnchorRef.current = nodeId;
           return;
         }
-        const anchorIdx = visibleNodes.findIndex((n) => n.id === anchor);
-        const toIdx = visibleNodes.findIndex((n) => n.id === nodeId);
-        if (anchorIdx === -1 || toIdx === -1) {
-          setFormSelectedNodeId(nodeId);
+        const rangeIds = computeRangeIds(visibleNodes, anchor, nodeId);
+        if (!rangeIds) {
+          setFormFocusedId(nodeId);
           setFormSelectedNodeIds(new Set([nodeId]));
           formAnchorRef.current = nodeId;
           return;
-        }
-        const start = Math.min(anchorIdx, toIdx);
-        const end = Math.max(anchorIdx, toIdx);
-        const rangeIds = new Set<string>();
-        for (let i = start; i <= end; i++) {
-          rangeIds.add(visibleNodes[i].id);
         }
         setFormSelectedNodeIds(rangeIds);
-        setFormSelectedNodeId(nodeId);
+        setFormFocusedId(nodeId);
       } else if (e.metaKey || e.ctrlKey) {
         setFormSelectedNodeIds((prev) => {
           const next = new Set(prev);
@@ -766,10 +758,10 @@ export function FormView({
           }
           return next;
         });
-        setFormSelectedNodeId(nodeId);
+        setFormFocusedId(nodeId);
         formAnchorRef.current = nodeId;
       } else {
-        setFormSelectedNodeId(nodeId);
+        setFormFocusedId(nodeId);
         setFormSelectedNodeIds(new Set([nodeId]));
         formAnchorRef.current = nodeId;
       }
@@ -806,6 +798,12 @@ export function FormView({
     });
   }, []);
 
+  const selectFormNode = useCallback((nodeId: string) => {
+    setFormFocusedId(nodeId);
+    setFormSelectedNodeIds(new Set([nodeId]));
+    formAnchorRef.current = nodeId;
+  }, []);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (editingNodeId) {
@@ -829,7 +827,7 @@ export function FormView({
       }
 
       const currentIndex = visibleNodes.findIndex(
-        (n) => n.id === formSelectedNodeId,
+        (n) => n.id === formFocusedId,
       );
 
       switch (e.key) {
@@ -840,23 +838,14 @@ export function FormView({
             if (e.shiftKey) {
               const anchor = formAnchorRef.current;
               if (anchor) {
-                const anchorIdx = visibleNodes.findIndex(
-                  (n) => n.id === anchor,
-                );
-                const toIdx = visibleNodes.indexOf(next);
-                const start = Math.min(anchorIdx, toIdx);
-                const end = Math.max(anchorIdx, toIdx);
-                const rangeIds = new Set<string>();
-                for (let i = start; i <= end; i++) {
-                  rangeIds.add(visibleNodes[i].id);
-                }
-                setFormSelectedNodeIds(rangeIds);
+                const rangeIds = computeRangeIds(visibleNodes, anchor, next.id);
+                if (rangeIds) setFormSelectedNodeIds(rangeIds);
               }
             } else {
               setFormSelectedNodeIds(new Set([next.id]));
               formAnchorRef.current = next.id;
             }
-            setFormSelectedNodeId(next.id);
+            setFormFocusedId(next.id);
             scrollToNode(next.id);
           }
           break;
@@ -868,23 +857,14 @@ export function FormView({
             if (e.shiftKey) {
               const anchor = formAnchorRef.current;
               if (anchor) {
-                const anchorIdx = visibleNodes.findIndex(
-                  (n) => n.id === anchor,
-                );
-                const toIdx = visibleNodes.indexOf(prev);
-                const start = Math.min(anchorIdx, toIdx);
-                const end = Math.max(anchorIdx, toIdx);
-                const rangeIds = new Set<string>();
-                for (let i = start; i <= end; i++) {
-                  rangeIds.add(visibleNodes[i].id);
-                }
-                setFormSelectedNodeIds(rangeIds);
+                const rangeIds = computeRangeIds(visibleNodes, anchor, prev.id);
+                if (rangeIds) setFormSelectedNodeIds(rangeIds);
               }
             } else {
               setFormSelectedNodeIds(new Set([prev.id]));
               formAnchorRef.current = prev.id;
             }
-            setFormSelectedNodeId(prev.id);
+            setFormFocusedId(prev.id);
             scrollToNode(prev.id);
           }
           break;
@@ -900,11 +880,8 @@ export function FormView({
                 return next;
               });
             } else if (node.children.length > 0) {
-              const child = node.children[0];
-              setFormSelectedNodeId(child.id);
-              setFormSelectedNodeIds(new Set([child.id]));
-              formAnchorRef.current = child.id;
-              scrollToNode(child.id);
+              selectFormNode(node.children[0].id);
+              scrollToNode(node.children[0].id);
             }
           }
           break;
@@ -926,9 +903,7 @@ export function FormView({
               (n) => n.id === current.parentId,
             );
             if (parentInVisible) {
-              setFormSelectedNodeId(parentInVisible.id);
-              setFormSelectedNodeIds(new Set([parentInVisible.id]));
-              formAnchorRef.current = parentInVisible.id;
+              selectFormNode(parentInVisible.id);
               scrollToNode(parentInVisible.id);
             }
           }
@@ -936,11 +911,11 @@ export function FormView({
         }
         case "Enter": {
           e.preventDefault();
-          if (formSelectedNodeId) {
+          if (formFocusedId) {
             preEditTreeRef.current = state.tree;
-            setFormSelectedNodeIds(new Set([formSelectedNodeId]));
-            formAnchorRef.current = formSelectedNodeId;
-            setEditingNodeId(formSelectedNodeId);
+            setFormSelectedNodeIds(new Set([formFocusedId]));
+            formAnchorRef.current = formFocusedId;
+            setEditingNodeId(formFocusedId);
           }
           break;
         }
@@ -952,35 +927,17 @@ export function FormView({
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const idsToDelete = [...formSelectedNodeIds].filter((id) => {
-            const node = state.tree.nodesById.get(id);
-            return node && node.parentId !== null;
-          });
-          if (idsToDelete.length === 0) break;
-          const firstDeletedIdx = visibleNodes.findIndex((n) =>
-            formSelectedNodeIds.has(n.id),
+          const { newTree, nextFocusId } = deleteSelectedNodes(
+            state.tree,
+            formSelectedNodeIds,
+            visibleNodes,
           );
-          let newTree = state.tree;
-          for (const id of idsToDelete) {
-            if (newTree.nodesById.has(id)) {
-              newTree = removeNode(newTree, id);
-            }
-          }
+          if (newTree === state.tree) break;
           actions.setTree(newTree);
-          const remaining = visibleNodes.filter(
-            (n) => !formSelectedNodeIds.has(n.id),
-          );
-          const nextSelect =
-            remaining.find((_, i) => {
-              const origIdx = visibleNodes.indexOf(remaining[i]);
-              return origIdx >= firstDeletedIdx;
-            }) ?? remaining[remaining.length - 1];
-          if (nextSelect) {
-            setFormSelectedNodeId(nextSelect.id);
-            setFormSelectedNodeIds(new Set([nextSelect.id]));
-            formAnchorRef.current = nextSelect.id;
+          if (nextFocusId) {
+            selectFormNode(nextFocusId);
           } else {
-            setFormSelectedNodeId(null);
+            setFormFocusedId(null);
             setFormSelectedNodeIds(new Set<string>());
             formAnchorRef.current = null;
           }
@@ -990,11 +947,12 @@ export function FormView({
     },
     [
       visibleNodes,
-      formSelectedNodeId,
+      formFocusedId,
       formSelectedNodeIds,
       editingNodeId,
       collapsedIds,
       scrollToNode,
+      selectFormNode,
       state.tree,
       actions,
     ],

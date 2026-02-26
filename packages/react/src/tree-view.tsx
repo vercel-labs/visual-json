@@ -10,6 +10,7 @@ import { useStudio } from "./context";
 import { ContextMenu, type ContextMenuEntry } from "./context-menu";
 import { getDisplayKey } from "./display-key";
 import { getVisibleNodes } from "./get-visible-nodes";
+import { deleteSelectedNodes } from "./selection-utils";
 import { useDragDrop, type DragState } from "./use-drag-drop";
 
 interface TreeNodeRowProps {
@@ -380,7 +381,7 @@ export function TreeView({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const currentIndex = visibleNodes.findIndex(
-        (n) => n.id === state.selectedNodeId,
+        (n) => n.id === state.focusedNodeId,
       );
 
       switch (e.key) {
@@ -436,41 +437,21 @@ export function TreeView({
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const idsToDelete = [...state.selectedNodeIds].filter((id) => {
-            const node = state.tree.nodesById.get(id);
-            return node && node.parentId !== null;
-          });
-          if (idsToDelete.length === 0) break;
-          const firstDeletedIdx = visibleNodes.findIndex((n) =>
-            state.selectedNodeIds.has(n.id),
+          const { newTree, nextFocusId } = deleteSelectedNodes(
+            state.tree,
+            state.selectedNodeIds,
+            visibleNodes,
           );
-          let newTree = state.tree;
-          for (const id of idsToDelete) {
-            if (newTree.nodesById.has(id)) {
-              newTree = removeNode(newTree, id);
-            }
-          }
+          if (newTree === state.tree) break;
           actions.setTree(newTree);
-          const remaining = visibleNodes.filter(
-            (n) => !state.selectedNodeIds.has(n.id),
-          );
-          const nextSelect =
-            remaining.find((_, i) => {
-              const origIdx = visibleNodes.indexOf(remaining[i]);
-              return origIdx >= firstDeletedIdx;
-            }) ?? remaining[remaining.length - 1];
-          if (nextSelect) {
-            actions.selectNode(nextSelect.id);
-          } else {
-            actions.selectNode(null);
-          }
+          actions.selectNode(nextFocusId);
           break;
         }
       }
     },
     [
       visibleNodes,
-      state.selectedNodeId,
+      state.focusedNodeId,
       state.selectedNodeIds,
       state.expandedNodeIds,
       state.tree,
@@ -481,15 +462,15 @@ export function TreeView({
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    if (state.selectedNodeId && containerRef.current) {
+    if (state.focusedNodeId && containerRef.current) {
       const el = containerRef.current.querySelector(
-        `[data-node-id="${state.selectedNodeId}"]`,
+        `[data-node-id="${state.focusedNodeId}"]`,
       );
       if (el) {
         el.scrollIntoView({ block: "nearest" });
       }
     }
-  }, [state.selectedNodeId]);
+  }, [state.focusedNodeId]);
 
   return (
     <>

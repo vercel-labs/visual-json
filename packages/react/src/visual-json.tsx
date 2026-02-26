@@ -20,6 +20,7 @@ import {
 } from "@visual-json/core";
 import { StudioContext, type StudioState, type StudioActions } from "./context";
 import { getVisibleNodes } from "./get-visible-nodes";
+import { computeRangeIds } from "./selection-utils";
 
 export interface VisualJsonProps {
   value: JsonValue;
@@ -43,7 +44,7 @@ export function VisualJson({
   children,
 }: VisualJsonProps) {
   const [tree, setTreeState] = useState<TreeState>(() => fromJson(value));
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     () => new Set<string>(),
   );
@@ -83,7 +84,7 @@ export function VisualJson({
     const newTree = fromJson(value);
     setTreeState(newTree);
     setExpandedNodeIds(new Set([newTree.root.id]));
-    setSelectedNodeId(null);
+    setFocusedNodeId(null);
     setSelectedNodeIds(new Set<string>());
     anchorNodeIdRef.current = null;
     historyRef.current = new History();
@@ -150,7 +151,7 @@ export function VisualJson({
   }, [undo, redo]);
 
   const selectNode = useCallback((nodeId: string | null) => {
-    setSelectedNodeId(nodeId);
+    setFocusedNodeId(nodeId);
     setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
     anchorNodeIdRef.current = nodeId;
   }, []);
@@ -165,7 +166,7 @@ export function VisualJson({
       }
       return next;
     });
-    setSelectedNodeId(nodeId);
+    setFocusedNodeId(nodeId);
     anchorNodeIdRef.current = nodeId;
   }, []);
 
@@ -173,7 +174,7 @@ export function VisualJson({
     (toNodeId: string) => {
       const anchor = anchorNodeIdRef.current;
       if (!anchor) {
-        setSelectedNodeId(toNodeId);
+        setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
         anchorNodeIdRef.current = toNodeId;
         return;
@@ -181,22 +182,15 @@ export function VisualJson({
       const visible = getVisibleNodes(tree.root, (id) =>
         expandedNodeIds.has(id),
       );
-      const anchorIdx = visible.findIndex((n) => n.id === anchor);
-      const toIdx = visible.findIndex((n) => n.id === toNodeId);
-      if (anchorIdx === -1 || toIdx === -1) {
-        setSelectedNodeId(toNodeId);
+      const rangeIds = computeRangeIds(visible, anchor, toNodeId);
+      if (!rangeIds) {
+        setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
         anchorNodeIdRef.current = toNodeId;
         return;
       }
-      const start = Math.min(anchorIdx, toIdx);
-      const end = Math.max(anchorIdx, toIdx);
-      const rangeIds = new Set<string>();
-      for (let i = start; i <= end; i++) {
-        rangeIds.add(visible[i].id);
-      }
       setSelectedNodeIds(rangeIds);
-      setSelectedNodeId(toNodeId);
+      setFocusedNodeId(toNodeId);
     },
     [tree.root, expandedNodeIds],
   );
@@ -261,7 +255,7 @@ export function VisualJson({
           for (const id of ancestors) next.add(id);
           return next;
         });
-        setSelectedNodeId(firstId);
+        setFocusedNodeId(firstId);
         setSelectedNodeIds(new Set([firstId]));
         anchorNodeIdRef.current = firstId;
       }
@@ -274,7 +268,7 @@ export function VisualJson({
     const nextIdx = (searchMatchIndex + 1) % searchMatches.length;
     const nodeId = searchMatches[nextIdx].nodeId;
     setSearchMatchIndex(nextIdx);
-    setSelectedNodeId(nodeId);
+    setFocusedNodeId(nodeId);
     setSelectedNodeIds(new Set([nodeId]));
     anchorNodeIdRef.current = nodeId;
   }, [searchMatches, searchMatchIndex]);
@@ -285,7 +279,7 @@ export function VisualJson({
       (searchMatchIndex - 1 + searchMatches.length) % searchMatches.length;
     const nodeId = searchMatches[prevIdx].nodeId;
     setSearchMatchIndex(prevIdx);
-    setSelectedNodeId(nodeId);
+    setFocusedNodeId(nodeId);
     setSelectedNodeIds(new Set([nodeId]));
     anchorNodeIdRef.current = nodeId;
   }, [searchMatches, searchMatchIndex]);
@@ -303,7 +297,7 @@ export function VisualJson({
   const state: StudioState = useMemo(
     () => ({
       tree,
-      selectedNodeId,
+      focusedNodeId,
       selectedNodeIds,
       expandedNodeIds,
       schema: schema ?? null,
@@ -314,7 +308,7 @@ export function VisualJson({
     }),
     [
       tree,
-      selectedNodeId,
+      focusedNodeId,
       selectedNodeIds,
       expandedNodeIds,
       schema,
