@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type Locator } from "@playwright/test";
 
 const treeSelector = "[role='tree']";
 const formSelector = "[data-form-container]";
@@ -19,6 +19,43 @@ async function selectedTreeItems(page: Page) {
   return page
     .locator(`${treeSelector} [role='treeitem'][aria-selected='true']`)
     .all();
+}
+
+async function hasBgColor(locator: Locator): Promise<boolean> {
+  return locator.evaluate((el) => {
+    const bg = getComputedStyle(el).backgroundColor;
+    const c = document.createElement("canvas");
+    c.width = c.height = 1;
+    const ctx = c.getContext("2d")!;
+    ctx.clearRect(0, 0, 1, 1);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, 1, 1);
+    return ctx.getImageData(0, 0, 1, 1).data[3] > 0;
+  });
+}
+
+async function bgColorsMatch(a: Locator, b: Locator): Promise<boolean> {
+  const [bgA, bgB] = await Promise.all([
+    a.evaluate((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      const c = document.createElement("canvas");
+      c.width = c.height = 1;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, 1, 1);
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+    }),
+    b.evaluate((el) => {
+      const bg = getComputedStyle(el).backgroundColor;
+      const c = document.createElement("canvas");
+      c.width = c.height = 1;
+      const ctx = c.getContext("2d")!;
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, 1, 1);
+      return Array.from(ctx.getImageData(0, 0, 1, 1).data);
+    }),
+  ]);
+  return bgA.every((v, i) => v === bgB[i]);
 }
 
 test.describe("multi-select: tree view", () => {
@@ -184,6 +221,7 @@ test.describe("multi-select: tree view", () => {
     const target = treeItem(page, "scripts");
     const targetBox = await target.boundingBox();
     await source.dragTo(target, {
+      force: true,
       targetPosition: { x: targetBox!.width / 2, y: targetBox!.height - 2 },
     });
 
@@ -214,16 +252,9 @@ test.describe("multi-select: form view", () => {
     const nameRow = formRow(page, "name");
     const versionRow = formRow(page, "version");
 
-    const nameBg = await nameRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    const versionBg = await versionRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-
-    expect(nameBg).not.toBe("rgba(0, 0, 0, 0)");
-    expect(versionBg).not.toBe("rgba(0, 0, 0, 0)");
-    expect(nameBg).toBe(versionBg);
+    expect(await hasBgColor(nameRow)).toBe(true);
+    expect(await hasBgColor(versionRow)).toBe(true);
+    expect(await bgColorsMatch(nameRow, versionRow)).toBe(true);
   });
 
   test("Shift+click selects a range of form rows", async ({ page }) => {
@@ -234,36 +265,20 @@ test.describe("multi-select: form view", () => {
     const versionRow = formRow(page, "version");
     const privateRow = formRow(page, "private");
 
-    const nameBg = await nameRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    const versionBg = await versionRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    const privateBg = await privateRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-
-    expect(nameBg).not.toBe("rgba(0, 0, 0, 0)");
-    expect(nameBg).toBe(versionBg);
-    expect(versionBg).toBe(privateBg);
+    expect(await hasBgColor(nameRow)).toBe(true);
+    expect(await bgColorsMatch(nameRow, versionRow)).toBe(true);
+    expect(await bgColorsMatch(versionRow, privateRow)).toBe(true);
   });
 
   test("Shift+ArrowDown extends form selection", async ({ page }) => {
     await formRow(page, "name").click();
     await page.locator(formSelector).press("Shift+ArrowDown");
 
-    const versionRow = formRow(page, "version");
-    const versionBg = await versionRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(versionBg).not.toBe("rgba(0, 0, 0, 0)");
-
     const nameRow = formRow(page, "name");
-    const nameBg = await nameRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(nameBg).toBe(versionBg);
+    const versionRow = formRow(page, "version");
+
+    expect(await hasBgColor(versionRow)).toBe(true);
+    expect(await bgColorsMatch(nameRow, versionRow)).toBe(true);
   });
 
   test("Delete removes all selected form rows", async ({ page }) => {
@@ -289,10 +304,7 @@ test.describe("multi-select: form view", () => {
     await page.locator(formSelector).press("Enter");
 
     const nameRow = formRow(page, "name");
-    const nameBg = await nameRow.evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(nameBg).toBe("rgba(0, 0, 0, 0)");
+    expect(await hasBgColor(nameRow)).toBe(false);
 
     const versionInput = page.locator(`${formSelector} input[value='1.0.0']`);
     await expect(versionInput).toBeVisible();
@@ -396,6 +408,7 @@ test.describe("multi-select: cross-parent drag preserves state", () => {
     const target = treeItem(page, "dependencies");
     const targetBox = await target.boundingBox();
     await scriptsItem.dragTo(target, {
+      force: true,
       targetPosition: { x: targetBox!.width / 2, y: targetBox!.height - 2 },
     });
 
@@ -481,32 +494,17 @@ test.describe("multi-select: Escape clears selection", () => {
     await formRow(page, "name").click();
     await formRow(page, "version").click({ modifiers: [mod] });
 
-    const nameBgBefore = await formRow(page, "name").evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(nameBgBefore).not.toBe("rgba(0, 0, 0, 0)");
+    expect(await hasBgColor(formRow(page, "name"))).toBe(true);
 
     await page.locator(formSelector).press("Escape");
 
-    const nameBgAfterFirst = await formRow(page, "name").evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    const versionBgAfterFirst = await formRow(page, "version").evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(nameBgAfterFirst).toBe("rgba(0, 0, 0, 0)");
-    expect(versionBgAfterFirst).not.toBe("rgba(0, 0, 0, 0)");
+    expect(await hasBgColor(formRow(page, "name"))).toBe(false);
+    expect(await hasBgColor(formRow(page, "version"))).toBe(true);
 
     await page.locator(formSelector).press("Escape");
 
-    const nameBgAfterSecond = await formRow(page, "name").evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    const versionBgAfterSecond = await formRow(page, "version").evaluate(
-      (el) => getComputedStyle(el).backgroundColor,
-    );
-    expect(nameBgAfterSecond).toBe("rgba(0, 0, 0, 0)");
-    expect(versionBgAfterSecond).toBe("rgba(0, 0, 0, 0)");
+    expect(await hasBgColor(formRow(page, "name"))).toBe(false);
+    expect(await hasBgColor(formRow(page, "version"))).toBe(false);
   });
 
   test("Escape while editing in form reverts edit without clearing edit state", async ({

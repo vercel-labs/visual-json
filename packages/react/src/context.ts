@@ -25,12 +25,13 @@ export interface StudioActions {
   selectNode: (nodeId: string | null) => void;
   selectAndDrillDown: (nodeId: string | null) => void;
   toggleNodeSelection: (nodeId: string) => void;
-  selectNodeRange: (toNodeId: string, customVisibleNodes?: TreeNode[]) => void;
+  selectNodeRange: (toNodeId: string) => void;
   setSelection: (
     focusedId: string | null,
     selectedIds: Set<string>,
     anchorId: string | null,
   ) => void;
+  setVisibleNodesOverride: (nodes: TreeNode[] | null) => void;
   drillDown: (nodeId: string | null) => void;
   toggleExpand: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;

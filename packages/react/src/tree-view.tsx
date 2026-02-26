@@ -257,50 +257,25 @@ export function TreeView({
   const { state, actions } = useStudio();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const {
-    dragState,
-    handleDragStart: rawDragStart,
-    handleDragOver,
-    handleDragEnd,
-    handleDrop,
-  } = useDragDrop();
-
-  const handleDragStart = useCallback(
-    (nodeId: string) => rawDragStart(nodeId, state.selectedNodeIds),
-    [rawDragStart, state.selectedNodeIds],
-  );
-
-  const [contextMenu, setContextMenu] = useState<{
-    x: number;
-    y: number;
-    node: TreeNode;
-  } | null>(null);
-
   const visibleNodes = useMemo(
     () =>
       getVisibleNodes(state.tree.root, (id) => state.expandedNodeIds.has(id)),
     [state.tree.root, state.expandedNodeIds],
   );
 
-  const visibleNodeIndexMap = useMemo(() => {
-    const map = new Map<string, number>();
-    visibleNodes.forEach((n, i) => map.set(n.id, i));
-    return map;
-  }, [visibleNodes]);
+  const {
+    dragState,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDrop,
+  } = useDragDrop(visibleNodes, state.selectedNodeIds);
 
-  const normalizedDragOver = useCallback(
-    (nodeId: string, position: "before" | "after") => {
-      if (position === "before") {
-        const idx = visibleNodeIndexMap.get(nodeId);
-        if (idx !== undefined && idx > 0) {
-          handleDragOver(visibleNodes[idx - 1].id, "after");
-          return;
-        }
-      }
-      handleDragOver(nodeId, position);
-    },
-    [visibleNodes, visibleNodeIndexMap, handleDragOver],
-  );
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    node: TreeNode;
+  } | null>(null);
 
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
@@ -562,7 +537,7 @@ export function TreeView({
           showCounts={showCounts}
           isFocused={isFocused}
           onDragStart={handleDragStart}
-          onDragOver={normalizedDragOver}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDrop={handleDrop}
           onContextMenu={handleContextMenu}

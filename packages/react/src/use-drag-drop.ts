@@ -1,5 +1,5 @@
 import type React from "react";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 import {
   removeNode,
   insertNode,
@@ -66,17 +66,26 @@ export function setMultiDragImage(e: React.DragEvent, count: number) {
   requestAnimationFrame(() => ghost.remove());
 }
 
-export function useDragDrop() {
+export function useDragDrop(
+  visibleNodes: TreeNode[],
+  selectedNodeIds: ReadonlySet<string>,
+) {
   const { state, actions } = useStudio();
   const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
   const dragStateRef = useRef<DragState>(dragState);
   dragStateRef.current = dragState;
 
+  const visibleNodeIndexMap = useMemo(() => {
+    const map = new Map<string, number>();
+    visibleNodes.forEach((n, i) => map.set(n.id, i));
+    return map;
+  }, [visibleNodes]);
+
   const handleDragStart = useCallback(
-    (nodeId: string, selectedIds?: ReadonlySet<string>) => {
+    (nodeId: string) => {
       let ids: ReadonlySet<string>;
-      if (selectedIds && selectedIds.size > 0 && selectedIds.has(nodeId)) {
-        ids = selectedIds;
+      if (selectedNodeIds.size > 0 && selectedNodeIds.has(nodeId)) {
+        ids = selectedNodeIds;
       } else {
         ids = new Set([nodeId]);
       }
@@ -86,10 +95,10 @@ export function useDragDrop() {
         dropPosition: null,
       });
     },
-    [],
+    [selectedNodeIds],
   );
 
-  const handleDragOver = useCallback(
+  const rawDragOver = useCallback(
     (nodeId: string, position: "before" | "after") => {
       const draggedIds = dragStateRef.current.draggedNodeIds;
       for (const draggedId of draggedIds) {
@@ -108,6 +117,20 @@ export function useDragDrop() {
       }));
     },
     [state.tree],
+  );
+
+  const handleDragOver = useCallback(
+    (nodeId: string, position: "before" | "after") => {
+      if (position === "before") {
+        const idx = visibleNodeIndexMap.get(nodeId);
+        if (idx !== undefined && idx > 0) {
+          rawDragOver(visibleNodes[idx - 1].id, "after");
+          return;
+        }
+      }
+      rawDragOver(nodeId, position);
+    },
+    [visibleNodes, visibleNodeIndexMap, rawDragOver],
   );
 
   const handleDragEnd = useCallback(() => {
@@ -155,7 +178,8 @@ export function useDragDrop() {
       const orderedIds = sortByTreeOrder(state.tree.root, draggedNodeIds);
       const draggedNodes = orderedIds
         .map((id) => state.tree.nodesById.get(id))
-        .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null);
+        .filter((n): n is NonNullable<typeof n> => !!n && n.parentId !== null)
+        .map((n) => structuredClone(n));
 
       let newTree = state.tree;
       for (const id of [...orderedIds].reverse()) {

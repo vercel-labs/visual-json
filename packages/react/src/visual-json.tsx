@@ -65,10 +65,26 @@ export function VisualJson({
     setAnchorNodeIdState(id);
   }, []);
 
+  const focusSelectAndDrillDown = useCallback(
+    (nodeId: string | null) => {
+      setFocusedNodeId(nodeId);
+      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
+      setAnchorNodeId(nodeId);
+      setDrillDownNodeId(nodeId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
   const visibleNodes = useMemo(
     () => getVisibleNodes(tree.root, (id) => expandedNodeIds.has(id)),
     [tree.root, expandedNodeIds],
   );
+
+  const visibleNodesOverrideRef = useRef<TreeNode[] | null>(null);
+
+  const setVisibleNodesOverride = useCallback((nodes: TreeNode[] | null) => {
+    visibleNodesOverrideRef.current = nodes;
+  }, []);
 
   const historyRef = useRef<History>(new History());
   const isInternalChange = useRef(false);
@@ -101,10 +117,7 @@ export function VisualJson({
     const newTree = fromJson(value);
     setTreeState(newTree);
     setExpandedNodeIds(new Set([newTree.root.id]));
-    setFocusedNodeId(null);
-    setSelectedNodeIds(new Set<string>());
-    setAnchorNodeId(null);
-    setDrillDownNodeId(null);
+    focusSelectAndDrillDown(null);
     historyRef.current = new History();
     historyRef.current.push(newTree);
     setCanUndo(false);
@@ -177,15 +190,7 @@ export function VisualJson({
     [setSelectedNodeIds, setAnchorNodeId],
   );
 
-  const selectAndDrillDown = useCallback(
-    (nodeId: string | null) => {
-      setDrillDownNodeId(nodeId);
-      setFocusedNodeId(nodeId);
-      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
-      setAnchorNodeId(nodeId);
-    },
-    [setSelectedNodeIds, setAnchorNodeId],
-  );
+  const selectAndDrillDown = focusSelectAndDrillDown;
 
   const toggleNodeSelection = useCallback(
     (nodeId: string) => {
@@ -208,8 +213,8 @@ export function VisualJson({
   );
 
   const selectNodeRange = useCallback(
-    (toNodeId: string, customVisibleNodes?: TreeNode[]) => {
-      const nodes = customVisibleNodes ?? visibleNodes;
+    (toNodeId: string) => {
+      const nodes = visibleNodesOverrideRef.current ?? visibleNodes;
       const anchor = anchorNodeIdRef.current;
       if (!anchor) {
         setFocusedNodeId(toNodeId);
@@ -307,10 +312,7 @@ export function VisualJson({
           for (const id of ancestors) next.add(id);
           return next;
         });
-        setFocusedNodeId(firstId);
-        setSelectedNodeIds(new Set([firstId]));
-        setAnchorNodeId(firstId);
-        setDrillDownNodeId(firstId);
+        focusSelectAndDrillDown(firstId);
       }
     },
     [tree],
@@ -319,25 +321,17 @@ export function VisualJson({
   const nextSearchMatch = useCallback(() => {
     if (searchMatches.length === 0) return;
     const nextIdx = (searchMatchIndex + 1) % searchMatches.length;
-    const nodeId = searchMatches[nextIdx].nodeId;
     setSearchMatchIndex(nextIdx);
-    setFocusedNodeId(nodeId);
-    setSelectedNodeIds(new Set([nodeId]));
-    setAnchorNodeId(nodeId);
-    setDrillDownNodeId(nodeId);
-  }, [searchMatches, searchMatchIndex]);
+    focusSelectAndDrillDown(searchMatches[nextIdx].nodeId);
+  }, [searchMatches, searchMatchIndex, focusSelectAndDrillDown]);
 
   const prevSearchMatch = useCallback(() => {
     if (searchMatches.length === 0) return;
     const prevIdx =
       (searchMatchIndex - 1 + searchMatches.length) % searchMatches.length;
-    const nodeId = searchMatches[prevIdx].nodeId;
     setSearchMatchIndex(prevIdx);
-    setFocusedNodeId(nodeId);
-    setSelectedNodeIds(new Set([nodeId]));
-    setAnchorNodeId(nodeId);
-    setDrillDownNodeId(nodeId);
-  }, [searchMatches, searchMatchIndex]);
+    focusSelectAndDrillDown(searchMatches[prevIdx].nodeId);
+  }, [searchMatches, searchMatchIndex, focusSelectAndDrillDown]);
 
   useEffect(() => {
     if (!searchQuery.trim()) return;
@@ -386,6 +380,7 @@ export function VisualJson({
       toggleNodeSelection,
       selectNodeRange,
       setSelection,
+      setVisibleNodesOverride,
       drillDown,
       toggleExpand,
       expandNode,
@@ -407,6 +402,7 @@ export function VisualJson({
       toggleNodeSelection,
       selectNodeRange,
       setSelection,
+      setVisibleNodesOverride,
       drillDown,
       toggleExpand,
       expandNode,

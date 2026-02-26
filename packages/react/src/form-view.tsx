@@ -693,18 +693,6 @@ export function FormView({
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const {
-    dragState,
-    handleDragStart: rawDragStart,
-    handleDragOver,
-    handleDragEnd,
-    handleDrop,
-  } = useDragDrop();
-
-  const handleDragStart = useCallback(
-    (nodeId: string) => rawDragStart(nodeId, state.selectedNodeIds),
-    [rawDragStart, state.selectedNodeIds],
-  );
 
   useEffect(() => {
     setEditingNodeId(null);
@@ -716,25 +704,18 @@ export function FormView({
     [displayNode, collapsedIds],
   );
 
-  const visibleNodeIndexMap = useMemo(() => {
-    const map = new Map<string, number>();
-    visibleNodes.forEach((n, i) => map.set(n.id, i));
-    return map;
-  }, [visibleNodes]);
+  const {
+    dragState,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDrop,
+  } = useDragDrop(visibleNodes, state.selectedNodeIds);
 
-  const normalizedDragOver = useCallback(
-    (nodeId: string, position: "before" | "after") => {
-      if (position === "before") {
-        const idx = visibleNodeIndexMap.get(nodeId);
-        if (idx !== undefined && idx > 0) {
-          handleDragOver(visibleNodes[idx - 1].id, "after");
-          return;
-        }
-      }
-      handleDragOver(nodeId, position);
-    },
-    [visibleNodes, visibleNodeIndexMap, handleDragOver],
-  );
+  useEffect(() => {
+    actions.setVisibleNodesOverride(visibleNodes);
+    return () => actions.setVisibleNodesOverride(null);
+  }, [visibleNodes, actions]);
 
   const { maxKeyLength, maxDepth } = useMemo(() => {
     let maxKey = 1;
@@ -759,14 +740,14 @@ export function FormView({
     (nodeId: string, e: React.MouseEvent) => {
       setEditingNodeId(null);
       if (e.shiftKey) {
-        actions.selectNodeRange(nodeId, visibleNodes);
+        actions.selectNodeRange(nodeId);
       } else if (e.metaKey || e.ctrlKey) {
         actions.toggleNodeSelection(nodeId);
       } else {
         actions.selectNode(nodeId);
       }
     },
-    [visibleNodes, actions],
+    [actions],
   );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
@@ -833,7 +814,7 @@ export function FormView({
           const next = visibleNodes[currentIndex + 1];
           if (next) {
             if (e.shiftKey) {
-              actions.selectNodeRange(next.id, visibleNodes);
+              actions.selectNodeRange(next.id);
             } else {
               actions.selectNode(next.id);
             }
@@ -846,7 +827,7 @@ export function FormView({
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
             if (e.shiftKey) {
-              actions.selectNodeRange(prev.id, visibleNodes);
+              actions.selectNodeRange(prev.id);
             } else {
               actions.selectNode(prev.id);
             }
@@ -1019,7 +1000,7 @@ export function FormView({
           onToggleCollapse={handleToggleCollapse}
           onStartEditing={handleStartEditing}
           onDragStart={handleDragStart}
-          onDragOver={normalizedDragOver}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
           onDrop={handleDrop}
         />

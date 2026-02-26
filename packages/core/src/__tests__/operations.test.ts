@@ -484,4 +484,43 @@ describe("insertNode", () => {
     expect(next.nodesById.get(obj.id)?.path).toBe("/dst/obj");
     expect(next.nodesById.get(deep.id)?.path).toBe("/dst/obj/deep");
   });
+
+  it("works correctly with structuredClone'd nodes after removal", () => {
+    const state = fromJson({ src: { a: 1, b: 2 }, dst: {} });
+    const a = state.root.children[0].children[0];
+    const b = state.root.children[0].children[1];
+    const snapshotA = structuredClone(a);
+    const snapshotB = structuredClone(b);
+
+    let tree = removeNode(state, b.id);
+    tree = removeNode(tree, a.id);
+
+    const dst = tree.root.children[1];
+    tree = insertNode(tree, dst.id, snapshotA, 0);
+    tree = insertNode(tree, dst.id, snapshotB, 1);
+
+    expect(toJson(tree.root)).toEqual({ src: {}, dst: { a: 1, b: 2 } });
+    expect(tree.nodesById.get(a.id)?.path).toBe("/dst/a");
+    expect(tree.nodesById.get(b.id)?.path).toBe("/dst/b");
+  });
+
+  it("cross-parent multi-move preserves IDs with structuredClone", () => {
+    const state = fromJson({ src: { obj: { x: 1 } }, dst: { existing: 0 } });
+    const obj = state.root.children[0].children[0];
+    const x = obj.children[0];
+    const snapshot = structuredClone(obj);
+
+    const removed = removeNode(state, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, snapshot, 1);
+
+    expect(next.nodesById.has(obj.id)).toBe(true);
+    expect(next.nodesById.has(x.id)).toBe(true);
+    expect(next.nodesById.get(obj.id)?.path).toBe("/dst/obj");
+    expect(next.nodesById.get(x.id)?.path).toBe("/dst/obj/x");
+    expect(toJson(next.root)).toEqual({
+      src: {},
+      dst: { existing: 0, obj: { x: 1 } },
+    });
+  });
 });
