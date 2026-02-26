@@ -25,7 +25,6 @@ interface FormFieldProps {
   depth: number;
   showDescriptions: boolean;
   showCounts: boolean;
-  formSelectedNodeIds: Set<string>;
   editingNodeId: string | null;
   collapsedIds: Set<string>;
   maxKeyLength: number;
@@ -73,7 +72,6 @@ function FormField({
   depth,
   showDescriptions,
   showCounts,
-  formSelectedNodeIds,
   editingNodeId,
   collapsedIds,
   maxKeyLength,
@@ -91,7 +89,7 @@ function FormField({
   const { state, actions } = useStudio();
   const isContainer = node.type === "object" || node.type === "array";
   const collapsed = collapsedIds.has(node.id);
-  const isSelected = formSelectedNodeIds.has(node.id);
+  const isSelected = state.selectedNodeIds.has(node.id);
   const isEditing = editingNodeId === node.id;
   const propSchema = getResolvedSchema(schema, rootSchema, node.path);
   const isRequired = checkRequired(node, schema, rootSchema);
@@ -391,7 +389,6 @@ function FormField({
                 depth={depth + 1}
                 showDescriptions={showDescriptions}
                 showCounts={showCounts}
-                formSelectedNodeIds={formSelectedNodeIds}
                 editingNodeId={editingNodeId}
                 collapsedIds={collapsedIds}
                 maxKeyLength={maxKeyLength}
@@ -666,16 +663,11 @@ export function FormView({
 }: FormViewProps) {
   const { state, actions } = useStudio();
   const rootSchema = state.schema ?? undefined;
-  const selectedNode = state.focusedNodeId
-    ? state.tree.nodesById.get(state.focusedNodeId)
+  const drillDownNode = state.drillDownNodeId
+    ? state.tree.nodesById.get(state.drillDownNodeId)
     : null;
-  const displayNode = selectedNode ?? state.tree.root;
+  const displayNode = drillDownNode ?? state.tree.root;
 
-  const [formFocusedId, setFormFocusedId] = useState<string | null>(null);
-  const [formSelectedNodeIds, setFormSelectedNodeIds] = useState<Set<string>>(
-    () => new Set<string>(),
-  );
-  const formAnchorRef = useRef<string | null>(null);
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const preEditTreeRef = useRef<typeof state.tree | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
@@ -692,14 +684,11 @@ export function FormView({
   } = useDragDrop();
 
   const handleDragStart = useCallback(
-    (nodeId: string) => rawDragStart(nodeId, formSelectedNodeIds),
-    [rawDragStart, formSelectedNodeIds],
+    (nodeId: string) => rawDragStart(nodeId, state.selectedNodeIds),
+    [rawDragStart, state.selectedNodeIds],
   );
 
   useEffect(() => {
-    setFormFocusedId(null);
-    setFormSelectedNodeIds(new Set<string>());
-    formAnchorRef.current = null;
     setEditingNodeId(null);
     setCollapsedIds(new Set<string>());
   }, [displayNode.id]);
@@ -732,41 +721,24 @@ export function FormView({
     (nodeId: string, e: React.MouseEvent) => {
       setEditingNodeId(null);
       if (e.shiftKey) {
-        const anchor = formAnchorRef.current;
+        const anchor = state.anchorNodeId;
         if (!anchor) {
-          setFormFocusedId(nodeId);
-          setFormSelectedNodeIds(new Set([nodeId]));
-          formAnchorRef.current = nodeId;
+          actions.setSelection(nodeId, new Set([nodeId]), nodeId);
           return;
         }
         const rangeIds = computeRangeIds(visibleNodes, anchor, nodeId);
         if (!rangeIds) {
-          setFormFocusedId(nodeId);
-          setFormSelectedNodeIds(new Set([nodeId]));
-          formAnchorRef.current = nodeId;
+          actions.setSelection(nodeId, new Set([nodeId]), nodeId);
           return;
         }
-        setFormSelectedNodeIds(rangeIds);
-        setFormFocusedId(nodeId);
+        actions.setSelection(nodeId, rangeIds, anchor);
       } else if (e.metaKey || e.ctrlKey) {
-        setFormSelectedNodeIds((prev) => {
-          const next = new Set(prev);
-          if (next.has(nodeId)) {
-            next.delete(nodeId);
-          } else {
-            next.add(nodeId);
-          }
-          return next;
-        });
-        setFormFocusedId(nodeId);
-        formAnchorRef.current = nodeId;
+        actions.toggleNodeSelection(nodeId);
       } else {
-        setFormFocusedId(nodeId);
-        setFormSelectedNodeIds(new Set([nodeId]));
-        formAnchorRef.current = nodeId;
+        actions.setSelection(nodeId, new Set([nodeId]), nodeId);
       }
     },
-    [visibleNodes],
+    [visibleNodes, state.anchorNodeId, actions],
   );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
@@ -798,11 +770,12 @@ export function FormView({
     });
   }, []);
 
-  const selectFormNode = useCallback((nodeId: string) => {
-    setFormFocusedId(nodeId);
-    setFormSelectedNodeIds(new Set([nodeId]));
-    formAnchorRef.current = nodeId;
-  }, []);
+  const selectFormNode = useCallback(
+    (nodeId: string) => {
+      actions.setSelection(nodeId, new Set([nodeId]), nodeId);
+    },
+    [actions],
+  );
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -826,9 +799,12 @@ export function FormView({
         return;
       }
 
-      const currentIndex = visibleNodes.findIndex(
-        (n) => n.id === formFocusedId,
+      let currentIndex = visibleNodes.findIndex(
+        (n) => n.id === state.focusedNodeId,
       );
+      if (currentIndex === -1 && visibleNodes.length > 0) {
+        currentIndex = 0;
+      }
 
       switch (e.key) {
         case "ArrowDown": {
@@ -836,16 +812,16 @@ export function FormView({
           const next = visibleNodes[currentIndex + 1];
           if (next) {
             if (e.shiftKey) {
-              const anchor = formAnchorRef.current;
+              const anchor = state.anchorNodeId;
               if (anchor) {
                 const rangeIds = computeRangeIds(visibleNodes, anchor, next.id);
-                if (rangeIds) setFormSelectedNodeIds(rangeIds);
+                if (rangeIds) {
+                  actions.setSelection(next.id, rangeIds, anchor);
+                }
               }
             } else {
-              setFormSelectedNodeIds(new Set([next.id]));
-              formAnchorRef.current = next.id;
+              selectFormNode(next.id);
             }
-            setFormFocusedId(next.id);
             scrollToNode(next.id);
           }
           break;
@@ -855,16 +831,16 @@ export function FormView({
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
             if (e.shiftKey) {
-              const anchor = formAnchorRef.current;
+              const anchor = state.anchorNodeId;
               if (anchor) {
                 const rangeIds = computeRangeIds(visibleNodes, anchor, prev.id);
-                if (rangeIds) setFormSelectedNodeIds(rangeIds);
+                if (rangeIds) {
+                  actions.setSelection(prev.id, rangeIds, anchor);
+                }
               }
             } else {
-              setFormSelectedNodeIds(new Set([prev.id]));
-              formAnchorRef.current = prev.id;
+              selectFormNode(prev.id);
             }
-            setFormFocusedId(prev.id);
             scrollToNode(prev.id);
           }
           break;
@@ -911,11 +887,14 @@ export function FormView({
         }
         case "Enter": {
           e.preventDefault();
-          if (formFocusedId) {
+          if (state.focusedNodeId) {
             preEditTreeRef.current = state.tree;
-            setFormSelectedNodeIds(new Set([formFocusedId]));
-            formAnchorRef.current = formFocusedId;
-            setEditingNodeId(formFocusedId);
+            actions.setSelection(
+              state.focusedNodeId,
+              new Set([state.focusedNodeId]),
+              state.focusedNodeId,
+            );
+            setEditingNodeId(state.focusedNodeId);
           }
           break;
         }
@@ -929,7 +908,7 @@ export function FormView({
           e.preventDefault();
           const { newTree, nextFocusId } = deleteSelectedNodes(
             state.tree,
-            formSelectedNodeIds,
+            state.selectedNodeIds,
             visibleNodes,
           );
           if (newTree === state.tree) break;
@@ -937,9 +916,7 @@ export function FormView({
           if (nextFocusId) {
             selectFormNode(nextFocusId);
           } else {
-            setFormFocusedId(null);
-            setFormSelectedNodeIds(new Set<string>());
-            formAnchorRef.current = null;
+            actions.setSelection(null, new Set<string>(), null);
           }
           break;
         }
@@ -947,8 +924,9 @@ export function FormView({
     },
     [
       visibleNodes,
-      formFocusedId,
-      formSelectedNodeIds,
+      state.focusedNodeId,
+      state.anchorNodeId,
+      state.selectedNodeIds,
       editingNodeId,
       collapsedIds,
       scrollToNode,
@@ -1006,7 +984,6 @@ export function FormView({
           depth={0}
           showDescriptions={showDescriptions}
           showCounts={showCounts}
-          formSelectedNodeIds={formSelectedNodeIds}
           editingNodeId={editingNodeId}
           collapsedIds={collapsedIds}
           maxKeyLength={maxKeyLength}

@@ -138,7 +138,11 @@ export function useDragDrop() {
         return;
       }
 
-      const updatedParent = newTree.nodesById.get(updatedTarget.parentId)!;
+      const updatedParent = newTree.nodesById.get(updatedTarget.parentId);
+      if (!updatedParent) {
+        setDragState(INITIAL_DRAG_STATE);
+        return;
+      }
       let insertIdx = updatedParent.children.findIndex(
         (c) => c.id === dropTargetNodeId,
       );

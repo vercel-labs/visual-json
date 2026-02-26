@@ -5,6 +5,8 @@ export interface StudioState {
   tree: TreeState;
   focusedNodeId: string | null;
   selectedNodeIds: Set<string>;
+  anchorNodeId: string | null;
+  drillDownNodeId: string | null;
   expandedNodeIds: Set<string>;
   schema: JsonSchema | null;
   searchQuery: string;
@@ -18,6 +20,12 @@ export interface StudioActions {
   selectNode: (nodeId: string | null) => void;
   toggleNodeSelection: (nodeId: string) => void;
   selectNodeRange: (toNodeId: string) => void;
+  setSelection: (
+    focusedId: string | null,
+    selectedIds: Set<string>,
+    anchorId: string | null,
+  ) => void;
+  drillDown: (nodeId: string | null) => void;
   toggleExpand: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;
   collapseNode: (nodeId: string) => void;

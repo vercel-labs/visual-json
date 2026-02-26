@@ -247,7 +247,23 @@ export function reorderChildrenMulti(
     const remaining = p.children.filter((c) => !movedSet.has(c.id));
     let insertIdx = remaining.findIndex((c) => c.id === targetSiblingId);
     if (insertIdx === -1) {
-      insertIdx = position === "after" ? remaining.length : 0;
+      if (movedSet.has(targetSiblingId)) {
+        const origIdx = p.children.findIndex((c) => c.id === targetSiblingId);
+        const origMap = new Map(p.children.map((c, i) => [c.id, i]));
+        if (position === "after") {
+          insertIdx = remaining.findIndex(
+            (c) => (origMap.get(c.id) ?? -1) > origIdx,
+          );
+          if (insertIdx === -1) insertIdx = remaining.length;
+        } else {
+          insertIdx = remaining.findIndex(
+            (c) => (origMap.get(c.id) ?? -1) >= origIdx,
+          );
+          if (insertIdx === -1) insertIdx = remaining.length;
+        }
+      } else {
+        insertIdx = position === "after" ? remaining.length : 0;
+      }
     } else if (position === "after") {
       insertIdx++;
     }

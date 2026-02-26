@@ -338,4 +338,76 @@ describe("reorderChildrenMulti", () => {
     );
     expect(next).toBe(state);
   });
+
+  it("keeps order when moving [a,b] after b (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, b] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, b.id],
+      b.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("keeps order when moving [a,b] before a (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, b] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, b.id],
+      a.id,
+      "before",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("keeps order when moving [b,c] after c (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [, b, c] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [b.id, c.id],
+      c.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("moves non-adjacent [a,c] after c (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, , c] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, c.id],
+      c.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
+  });
 });

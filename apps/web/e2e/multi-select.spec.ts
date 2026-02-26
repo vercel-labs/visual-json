@@ -74,6 +74,20 @@ test.describe("multi-select: tree view", () => {
     ).toContainText("version");
   });
 
+  test("Cmd/Ctrl+click on the only selected node deselects all", async ({
+    page,
+  }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "name").click();
+    expect(await selectedTreeItems(page)).toHaveLength(1);
+
+    await treeItem(page, "name").click({ modifiers: [mod] });
+
+    const selected = await selectedTreeItems(page);
+    expect(selected).toHaveLength(0);
+  });
+
   test("Shift+click selects a range", async ({ page }) => {
     await treeItem(page, "name").click();
     await treeItem(page, "private").click({ modifiers: ["Shift"] });
@@ -282,5 +296,39 @@ test.describe("multi-select: form view", () => {
 
     const versionInput = page.locator(`${formSelector} input[value='1.0.0']`);
     await expect(versionInput).toBeVisible();
+  });
+});
+
+test.describe("multi-select: cross-view sync", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/");
+    await page.waitForSelector(treeSelector);
+    await page.waitForSelector(formSelector);
+  });
+
+  test("Ctrl+click in form reflects in tree aria-selected", async ({
+    page,
+  }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "/").click();
+
+    await formRow(page, "name").click();
+    await formRow(page, "version").click({ modifiers: [mod] });
+
+    const selected = await selectedTreeItems(page);
+    expect(selected).toHaveLength(2);
+  });
+
+  test("selecting in tree then Ctrl+clicking in form merges selection", async ({
+    page,
+  }) => {
+    const mod = process.platform === "darwin" ? "Meta" : "Control";
+
+    await treeItem(page, "name").click();
+    await formRow(page, "version").click({ modifiers: [mod] });
+
+    const selected = await selectedTreeItems(page);
+    expect(selected).toHaveLength(2);
   });
 });

@@ -10,11 +10,11 @@ const DROPDOWN_MAX_HEIGHT = 200;
 
 export function Breadcrumbs({ className }: BreadcrumbsProps) {
   const { state, actions } = useStudio();
-  const selectedNode = state.focusedNodeId
-    ? state.tree.nodesById.get(state.focusedNodeId)
+  const drillDownNode = state.drillDownNodeId
+    ? state.tree.nodesById.get(state.drillDownNodeId)
     : null;
 
-  const currentPath = selectedNode?.path ?? "/";
+  const currentPath = drillDownNode?.path ?? "/";
 
   const [inputValue, setInputValue] = useState(currentPath);
   const [open, setOpen] = useState(false);
@@ -49,6 +49,7 @@ export function Breadcrumbs({ className }: BreadcrumbsProps) {
     (path: string) => {
       for (const [id, node] of state.tree.nodesById) {
         if (node.path === path) {
+          actions.drillDown(id);
           actions.selectNode(id);
           break;
         }

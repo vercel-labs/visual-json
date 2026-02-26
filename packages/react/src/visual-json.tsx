@@ -49,9 +49,16 @@ export function VisualJson({
     () => new Set<string>(),
   );
   const anchorNodeIdRef = useRef<string | null>(null);
+  const [anchorNodeId, setAnchorNodeIdState] = useState<string | null>(null);
+  const [drillDownNodeId, setDrillDownNodeId] = useState<string | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set([tree.root.id]),
   );
+
+  const setAnchorNodeId = useCallback((id: string | null) => {
+    anchorNodeIdRef.current = id;
+    setAnchorNodeIdState(id);
+  }, []);
 
   const visibleNodes = useMemo(
     () => getVisibleNodes(tree.root, (id) => expandedNodeIds.has(id)),
@@ -91,7 +98,8 @@ export function VisualJson({
     setExpandedNodeIds(new Set([newTree.root.id]));
     setFocusedNodeId(null);
     setSelectedNodeIds(new Set<string>());
-    anchorNodeIdRef.current = null;
+    setAnchorNodeId(null);
+    setDrillDownNodeId(null);
     historyRef.current = new History();
     historyRef.current.push(newTree);
     setCanUndo(false);
@@ -158,17 +166,18 @@ export function VisualJson({
   const selectNode = useCallback((nodeId: string | null) => {
     setFocusedNodeId(nodeId);
     setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
-    anchorNodeIdRef.current = nodeId;
+    setAnchorNodeId(nodeId);
+    setDrillDownNodeId(nodeId);
   }, []);
 
   const toggleNodeSelection = useCallback((nodeId: string) => {
+    const becameEmpty = { current: false };
     setSelectedNodeIds((prev) => {
       const next = new Set(prev);
       if (next.has(nodeId)) {
         next.delete(nodeId);
         if (next.size === 0) {
-          setFocusedNodeId(null);
-          anchorNodeIdRef.current = null;
+          becameEmpty.current = true;
           return next;
         }
       } else {
@@ -176,8 +185,13 @@ export function VisualJson({
       }
       return next;
     });
-    setFocusedNodeId(nodeId);
-    anchorNodeIdRef.current = nodeId;
+    if (becameEmpty.current) {
+      setFocusedNodeId(null);
+      setAnchorNodeId(null);
+    } else {
+      setFocusedNodeId(nodeId);
+      setAnchorNodeId(nodeId);
+    }
   }, []);
 
   const selectNodeRange = useCallback(
@@ -186,21 +200,38 @@ export function VisualJson({
       if (!anchor) {
         setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
-        anchorNodeIdRef.current = toNodeId;
+        setAnchorNodeId(toNodeId);
         return;
       }
       const rangeIds = computeRangeIds(visibleNodes, anchor, toNodeId);
       if (!rangeIds) {
         setFocusedNodeId(toNodeId);
         setSelectedNodeIds(new Set([toNodeId]));
-        anchorNodeIdRef.current = toNodeId;
+        setAnchorNodeId(toNodeId);
         return;
       }
       setSelectedNodeIds(rangeIds);
       setFocusedNodeId(toNodeId);
     },
-    [visibleNodes],
+    [visibleNodes, setAnchorNodeId],
   );
+
+  const setSelection = useCallback(
+    (
+      focusedId: string | null,
+      newSelectedIds: Set<string>,
+      newAnchorId: string | null,
+    ) => {
+      setFocusedNodeId(focusedId);
+      setSelectedNodeIds(newSelectedIds);
+      setAnchorNodeId(newAnchorId);
+    },
+    [],
+  );
+
+  const drillDown = useCallback((nodeId: string | null) => {
+    setDrillDownNodeId(nodeId);
+  }, []);
 
   const toggleExpand = useCallback((nodeId: string) => {
     setExpandedNodeIds((prev) => {
@@ -264,7 +295,8 @@ export function VisualJson({
         });
         setFocusedNodeId(firstId);
         setSelectedNodeIds(new Set([firstId]));
-        anchorNodeIdRef.current = firstId;
+        setAnchorNodeId(firstId);
+        setDrillDownNodeId(firstId);
       }
     },
     [tree],
@@ -277,7 +309,8 @@ export function VisualJson({
     setSearchMatchIndex(nextIdx);
     setFocusedNodeId(nodeId);
     setSelectedNodeIds(new Set([nodeId]));
-    anchorNodeIdRef.current = nodeId;
+    setAnchorNodeId(nodeId);
+    setDrillDownNodeId(nodeId);
   }, [searchMatches, searchMatchIndex]);
 
   const prevSearchMatch = useCallback(() => {
@@ -288,7 +321,8 @@ export function VisualJson({
     setSearchMatchIndex(prevIdx);
     setFocusedNodeId(nodeId);
     setSelectedNodeIds(new Set([nodeId]));
-    anchorNodeIdRef.current = nodeId;
+    setAnchorNodeId(nodeId);
+    setDrillDownNodeId(nodeId);
   }, [searchMatches, searchMatchIndex]);
 
   useEffect(() => {
@@ -306,6 +340,8 @@ export function VisualJson({
       tree,
       focusedNodeId,
       selectedNodeIds,
+      anchorNodeId,
+      drillDownNodeId,
       expandedNodeIds,
       schema: schema ?? null,
       searchQuery,
@@ -317,6 +353,8 @@ export function VisualJson({
       tree,
       focusedNodeId,
       selectedNodeIds,
+      anchorNodeId,
+      drillDownNodeId,
       expandedNodeIds,
       schema,
       searchQuery,
@@ -332,6 +370,8 @@ export function VisualJson({
       selectNode,
       toggleNodeSelection,
       selectNodeRange,
+      setSelection,
+      drillDown,
       toggleExpand,
       expandNode,
       collapseNode,
@@ -350,6 +390,8 @@ export function VisualJson({
       selectNode,
       toggleNodeSelection,
       selectNodeRange,
+      setSelection,
+      drillDown,
       toggleExpand,
       expandNode,
       collapseNode,
