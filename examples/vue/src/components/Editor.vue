@@ -270,39 +270,32 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="dropRef" class="app-shell">
+  <div ref="dropRef" class="flex flex-col h-full bg-[var(--bg)] text-[var(--text)]">
     <!-- Drop overlay -->
-    <div v-if="isDragOver" class="drop-overlay">
-      <div class="drop-hint">Drop JSON file here</div>
+    <div v-if="isDragOver" class="absolute inset-0 z-50 flex items-center justify-center bg-[var(--drop-overlay-bg)] pointer-events-none">
+      <div class="border-2 border-dashed border-[#007acc] rounded-lg px-12 py-8 text-base font-mono text-[#ccc]">Drop JSON file here</div>
     </div>
 
     <!-- Parse error -->
     <div v-if="parseError" class="error-banner">
       <span>{{ parseError }}</span>
-      <button @click="() => (parseError = null)">&times;</button>
+      <button class="bg-transparent border-none text-inherit cursor-pointer text-4 leading-none p-0 px-0.5" @click="() => (parseError = null)">
+        <div class="i-lucide-x" />
+      </button>
     </div>
 
     <!-- Toolbar -->
-    <div class="toolbar">
+    <div class="flex items-center gap-1.5 px-3 h-11 bg-[var(--toolbar-bg)] border-b border-[var(--toolbar-border)] shrink-0">
       <button
         class="toolbar-btn"
         :title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
         @click="() => (sidebarOpen = !sidebarOpen)"
       >
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-        >
-          <rect x="1" y="2" width="14" height="12" rx="1" />
-          <line x1="5" y1="2" x2="5" y2="14" />
-        </svg>
+        <div :class="sidebarOpen ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left'" />
       </button>
 
       <select
-        class="toolbar-select"
+        class="bg-[var(--select-bg)] border border-[var(--border)] rounded text-[var(--text)] text-xs font-inherit py-0.75 px-1.5 cursor-pointer outline-none"
         :value="activeSample"
         @change="(e) => handleSampleChange((e.target as HTMLSelectElement).value)"
       >
@@ -311,73 +304,32 @@ onUnmounted(() => {
         </option>
       </select>
 
-      <div class="toolbar-sep" />
+      <div class="w-px h-5 bg-[var(--border)] mx-0.5" />
 
       <input
         ref="fileInputRef"
         type="file"
         accept=".json,.jsonc,.json5"
-        class="hidden-file-input"
+        class="hidden"
         @change="handleFileInput"
       />
       <button class="toolbar-btn" title="Open file" @click="() => fileInputRef?.click()">
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M2 4h5l2 2h5v8H2z" />
-        </svg>
+        <div class="i-lucide-folder-open" />
       </button>
       <button class="toolbar-btn" title="Paste JSON" @click="handlePaste">
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="4" y="4" width="9" height="11" rx="1" />
-          <path d="M4 4V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1" />
-          <line x1="6" y1="8" x2="11" y2="8" />
-          <line x1="6" y1="11" x2="11" y2="11" />
-        </svg>
+        <div class="i-lucide-clipboard-paste" />
       </button>
       <button class="toolbar-btn" title="Download" @click="handleDownload">
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M8 2v8M5 7l3 3 3-3" />
-          <path d="M3 13h10" />
-        </svg>
+        <div class="i-lucide-download" />
       </button>
       <button class="toolbar-btn" title="Copy JSON" @click="handleCopyJson">
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <rect x="5" y="5" width="9" height="9" rx="1" />
-          <path d="M3 10V3a1 1 0 0 1 1-1h7" />
-        </svg>
+        <div class="i-lucide-copy" />
       </button>
 
-      <div class="toolbar-spacer" />
+      <div class="flex-1" />
 
       <!-- View mode toggle -->
-      <div class="view-toggle">
+      <div class="flex items-center border border-[var(--border)] rounded overflow-hidden">
         <button
           v-for="m in VIEW_MODES"
           :key="m.id"
@@ -394,31 +346,19 @@ onUnmounted(() => {
         title="Settings"
         @click="() => (settingsOpen = true)"
       >
-        <svg
-          viewBox="0 0 16 16"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <circle cx="8" cy="8" r="2" />
-          <path
-            d="M8 1v2M8 13v2M1 8h2M13 8h2M3.05 3.05l1.41 1.41M11.54 11.54l1.41 1.41M3.05 12.95l1.41-1.41M11.54 4.46l1.41-1.41"
-          />
-        </svg>
+        <div class="i-lucide-settings" />
       </button>
     </div>
 
     <!-- Editor area -->
-    <div class="editor-area">
+    <div class="flex-1 min-h-0 relative">
       <!-- Raw view -->
-      <div v-if="viewMode === 'raw'" class="raw-editor">
-        <div v-if="rawError" class="error-banner" style="justify-content: flex-start">
+      <div v-if="viewMode === 'raw'" class="flex flex-col h-full bg-[var(--bg)]">
+        <div v-if="rawError" class="error-banner justify-start!">
           {{ rawError }}
         </div>
         <textarea
-          class="raw-textarea"
+          class="flex-1 w-full bg-transparent text-[var(--text)] font-mono text-13px p-4 resize-none outline-none border-none leading-relaxed"
           :value="rawText"
           spellcheck="false"
           @input="(e) => handleRawChange((e.target as HTMLTextAreaElement).value)"
@@ -451,38 +391,24 @@ onUnmounted(() => {
     <!-- Paste dialog -->
     <div
       v-if="pasteDialogOpen"
-      class="settings-backdrop"
+      class="fixed inset-0 z-100 bg-black/40 flex items-center justify-center"
       @click.self="() => (pasteDialogOpen = false)"
     >
-      <div class="settings-panel" style="min-width: 400px">
+      <div class="settings-panel min-w-100">
         <h3>Paste JSON</h3>
         <textarea
           :value="pasteText"
           placeholder="Paste your JSON here..."
           spellcheck="false"
-          style="
-            width: 100%;
-            min-height: 180px;
-            background: var(--input-bg);
-            border: 1px solid var(--input-border);
-            border-radius: 4px;
-            color: var(--text);
-            font-family: monospace;
-            font-size: 13px;
-            padding: 8px;
-            resize: vertical;
-            outline: none;
-            box-sizing: border-box;
-          "
+          class="w-full min-h-45 bg-[var(--input-bg)] border border-[var(--input-border)] rounded text-[var(--text)] font-mono text-13px p-2 resize-y outline-none box-border"
           @input="(e) => (pasteText = (e.target as HTMLTextAreaElement).value)"
         />
-        <div style="display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end">
-          <button class="settings-close" style="width: auto; padding: 6px 16px" @click="() => (pasteDialogOpen = false)">
+        <div class="flex gap-2 mt-3 justify-end">
+          <button class="settings-close w-auto! py-1.5 px-4" @click="() => (pasteDialogOpen = false)">
             Cancel
           </button>
           <button
-            class="settings-close"
-            style="width: auto; padding: 6px 16px; background: #007acc; color: white; border-color: #007acc"
+            class="settings-close w-auto! py-1.5 px-4 bg-[#007acc]! text-white! border-[#007acc]!"
             @click="handlePasteSubmit"
           >
             Load
@@ -494,12 +420,12 @@ onUnmounted(() => {
     <!-- Settings panel -->
     <div
       v-if="settingsOpen"
-      class="settings-backdrop"
+      class="fixed inset-0 z-100 bg-black/40 flex items-center justify-center"
       @click.self="() => (settingsOpen = false)"
     >
       <div class="settings-panel">
         <h3>Settings</h3>
-        <div class="settings-group">
+        <div class="mb-4">
           <h4>Tree</h4>
           <div class="settings-row">
             <span>Values</span>
@@ -524,7 +450,7 @@ onUnmounted(() => {
             </label>
           </div>
         </div>
-        <div class="settings-group">
+        <div class="mb-4">
           <h4>Editor</h4>
           <div class="settings-row">
             <span>Descriptions</span>
