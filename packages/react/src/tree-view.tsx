@@ -77,12 +77,12 @@ function TreeNodeRow({
     onDragOver(node.id, position);
   }
 
-  let borderTop = "none";
-  let borderBottom = "none";
+  let borderTopColor = "transparent";
+  let borderBottomColor = "transparent";
   if (isDragTarget && dragState.dropPosition === "before") {
-    borderTop = "2px solid var(--vj-accent, #007acc)";
+    borderTopColor = "var(--vj-accent, #007acc)";
   } else if (isDragTarget && dragState.dropPosition === "after") {
-    borderBottom = "2px solid var(--vj-accent, #007acc)";
+    borderBottomColor = "var(--vj-accent, #007acc)";
   }
 
   return (
@@ -126,7 +126,7 @@ function TreeNodeRow({
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "3px 8px",
+          padding: "1px 8px",
           paddingLeft: 8 + depth * 16,
           cursor: "pointer",
           backgroundColor: isSelected
@@ -143,8 +143,9 @@ function TreeNodeRow({
           minHeight: 28,
           userSelect: "none",
           opacity: isDraggedNode ? 0.4 : 1,
-          borderTop,
-          borderBottom,
+          borderTop: `2px solid ${borderTopColor}`,
+          borderBottom: `2px solid ${borderBottomColor}`,
+          boxSizing: "border-box",
           color:
             isSelected && isFocused
               ? "var(--vj-text-selected, var(--vj-text, #cccccc))"
@@ -280,6 +281,20 @@ export function TreeView({
     () =>
       getVisibleNodes(state.tree.root, (id) => state.expandedNodeIds.has(id)),
     [state.tree.root, state.expandedNodeIds],
+  );
+
+  const normalizedDragOver = useCallback(
+    (nodeId: string, position: "before" | "after") => {
+      if (position === "before") {
+        const idx = visibleNodes.findIndex((n) => n.id === nodeId);
+        if (idx > 0) {
+          handleDragOver(visibleNodes[idx - 1].id, "after");
+          return;
+        }
+      }
+      handleDragOver(nodeId, position);
+    },
+    [visibleNodes, handleDragOver],
   );
 
   const handleContextMenu = useCallback(
@@ -521,7 +536,7 @@ export function TreeView({
           showCounts={showCounts}
           isFocused={isFocused}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
+          onDragOver={normalizedDragOver}
           onDragEnd={handleDragEnd}
           onDrop={handleDrop}
           onContextMenu={handleContextMenu}

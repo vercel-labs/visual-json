@@ -110,12 +110,12 @@ function FormField({
     onDragOver(node.id, e.clientY < midY ? "before" : "after");
   }
 
-  let borderTop = "none";
-  let borderBottom = "none";
+  let borderTopColor = "transparent";
+  let borderBottomColor = "transparent";
   if (isDragTarget && dragState.dropPosition === "before") {
-    borderTop = "2px solid var(--vj-accent, #007acc)";
+    borderTopColor = "var(--vj-accent, #007acc)";
   } else if (isDragTarget && dragState.dropPosition === "after") {
-    borderBottom = "2px solid var(--vj-accent, #007acc)";
+    borderBottomColor = "var(--vj-accent, #007acc)";
   }
 
   const valueRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
@@ -230,16 +230,17 @@ function FormField({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            padding: "3px 8px",
+            padding: "1px 8px",
             paddingLeft: 8 + depth * 16,
             cursor: "pointer",
             backgroundColor: rowBg,
             color: rowColor,
             height: 28,
+            boxSizing: "border-box",
             userSelect: "none",
             opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-            borderTop,
-            borderBottom,
+            borderTop: `2px solid ${borderTopColor}`,
+            borderBottom: `2px solid ${borderBottomColor}`,
           }}
           onClick={(e) => {
             e.stopPropagation();
@@ -447,16 +448,17 @@ function FormField({
         display: "flex",
         alignItems: "center",
         gap: 6,
-        padding: "3px 8px",
+        padding: "1px 8px",
         paddingLeft: 8 + depth * 16,
         cursor: "pointer",
         backgroundColor: rowBg,
         color: rowColor,
         height: 28,
+        boxSizing: "border-box",
         userSelect: "none",
         opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-        borderTop,
-        borderBottom,
+        borderTop: `2px solid ${borderTopColor}`,
+        borderBottom: `2px solid ${borderBottomColor}`,
       }}
       onClick={(e) => {
         e.stopPropagation();
@@ -712,6 +714,20 @@ export function FormView({
   const visibleNodes = useMemo(
     () => getVisibleNodes(displayNode, (id) => !collapsedIds.has(id)),
     [displayNode, collapsedIds],
+  );
+
+  const normalizedDragOver = useCallback(
+    (nodeId: string, position: "before" | "after") => {
+      if (position === "before") {
+        const idx = visibleNodes.findIndex((n) => n.id === nodeId);
+        if (idx > 0) {
+          handleDragOver(visibleNodes[idx - 1].id, "after");
+          return;
+        }
+      }
+      handleDragOver(nodeId, position);
+    },
+    [visibleNodes, handleDragOver],
   );
 
   const { maxKeyLength, maxDepth } = useMemo(() => {
@@ -976,7 +992,7 @@ export function FormView({
           onToggleCollapse={handleToggleCollapse}
           onStartEditing={handleStartEditing}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
+          onDragOver={normalizedDragOver}
           onDragEnd={handleDragEnd}
           onDrop={handleDrop}
         />
