@@ -7,11 +7,11 @@ export interface DragState {
   dropPosition: "before" | "after" | null;
 }
 
-export const INITIAL_DRAG_STATE: DragState = {
+export const INITIAL_DRAG_STATE: () => DragState = () => ({
   draggedNodeId: null,
   dropTargetNodeId: null,
   dropPosition: null,
-};
+});
 
 /**
  * Given the current tree and drag state, computes the new tree after a drop.

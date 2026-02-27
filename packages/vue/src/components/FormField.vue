@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, inject, computed, watch, nextTick } from "vue";
+import { shallowRef, inject, computed, watch, nextTick } from "vue";
 import {
   setValue,
   setKey,
@@ -30,10 +30,10 @@ const props = defineProps<{
 const ctx = inject(FORM_VIEW_KEY)!;
 const { state, actions } = useStudio();
 
-const hovered = ref(false);
+const hovered = shallowRef(false);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const valueInputRef = ref<any>(null);
-const keyInputRef = ref<HTMLInputElement | null>(null);
+const valueInputRef = shallowRef<any>(null);
+const keyInputRef = shallowRef<HTMLInputElement | null>(null);
 
 function focusValueInput() {
   if (valueInputRef.value && typeof valueInputRef.value.focus === "function") {

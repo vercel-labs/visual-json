@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { shallowRef } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { getDisplayKey } from "@visual-json/ui-shared";
@@ -27,7 +27,7 @@ const emit = defineEmits<{
 }>();
 
 const { state, actions } = useStudio();
-const hovered = ref(false);
+const hovered = shallowRef(false);
 
 function isSelected() {
   return state.selectedNodeId.value === props.node.id;

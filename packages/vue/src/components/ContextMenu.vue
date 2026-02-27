@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick } from "vue";
+import { shallowRef, watch, onMounted, onUnmounted, nextTick } from "vue";
 
 export interface ContextMenuItem {
   label: string;
@@ -24,8 +24,8 @@ const emit = defineEmits<{
   close: [];
 }>();
 
-const menuRef = ref<HTMLDivElement | null>(null);
-const pos = ref({ left: props.x, top: props.y });
+const menuRef = shallowRef<HTMLDivElement | null>(null);
+const pos = shallowRef({ left: props.x, top: props.y });
 
 watch(
   () => [props.x, props.y],

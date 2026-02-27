@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
+import { shallowRef, onMounted, onUnmounted } from "vue";
 import { useStudio } from "../composables/use-studio";
 
 defineProps<{
@@ -7,7 +7,7 @@ defineProps<{
 }>();
 
 const { state, actions } = useStudio();
-const inputRef = ref<HTMLInputElement | null>(null);
+const inputRef = shallowRef<HTMLInputElement | null>(null);
 
 function handleKeyDown(e: KeyboardEvent) {
   if (e.key === "Enter") {

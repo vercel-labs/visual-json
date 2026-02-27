@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, provide } from "vue";
+import { shallowRef, computed, watch, provide } from "vue";
 import { removeNode, type JsonSchemaProperty } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
@@ -21,11 +21,11 @@ const { state, actions } = useStudio();
 const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
   useDragDrop();
 
-const containerRef = ref<HTMLDivElement | null>(null);
-const isFocused = ref(false);
-const formSelectedNodeId = ref<string | null>(null);
-const editingNodeId = ref<string | null>(null);
-const collapsedIds = ref<Set<string>>(new Set());
+const containerRef = shallowRef<HTMLDivElement | null>(null);
+const isFocused = shallowRef(false);
+const formSelectedNodeId = shallowRef<string | null>(null);
+const editingNodeId = shallowRef<string | null>(null);
+const collapsedIds = shallowRef<Set<string>>(new Set());
 let preEditTree = state.tree.value;
 
 const displayNode = computed(() => {

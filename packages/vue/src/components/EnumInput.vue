@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { shallowRef, computed, watch, onMounted, onUnmounted } from "vue";
 import type { JsonValue } from "@visual-json/core";
 
 const props = defineProps<{
@@ -16,12 +16,12 @@ const inputRef = defineModel<HTMLInputElement | null>("inputRef");
 
 const DROPDOWN_MAX_HEIGHT = 200;
 
-const inputValue = ref(props.value);
-const open = ref(false);
-const highlightIndex = ref(0);
-const listRef = ref<HTMLDivElement | null>(null);
-const wrapperRef = ref<HTMLDivElement | null>(null);
-const localInputRef = ref<HTMLInputElement | null>(null);
+const inputValue = shallowRef(props.value);
+const open = shallowRef(false);
+const highlightIndex = shallowRef(0);
+const listRef = shallowRef<HTMLDivElement | null>(null);
+const wrapperRef = shallowRef<HTMLDivElement | null>(null);
+const localInputRef = shallowRef<HTMLInputElement | null>(null);
 
 watch(
   () => props.value,

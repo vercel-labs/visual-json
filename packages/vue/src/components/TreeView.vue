@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from "vue";
+import { shallowRef, computed, watch } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import {
   removeNode,
@@ -24,12 +24,12 @@ const props = withDefaults(
 );
 
 const { state, actions } = useStudio();
-const containerRef = ref<HTMLDivElement | null>(null);
+const containerRef = shallowRef<HTMLDivElement | null>(null);
 const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
   useDragDrop();
 
-const contextMenu = ref<{ x: number; y: number; node: TreeNode } | null>(null);
-const isFocused = ref(false);
+const contextMenu = shallowRef<{ x: number; y: number; node: TreeNode } | null>(null);
+const isFocused = shallowRef(false);
 
 const visibleNodes = computed(() =>
   getVisibleNodes(state.tree.value.root, (id) =>

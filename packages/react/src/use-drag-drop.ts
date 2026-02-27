@@ -11,7 +11,7 @@ export type { DragState } from "@visual-json/ui-shared";
 
 export function useDragDrop() {
   const { state, actions } = useStudio();
-  const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE);
+  const [dragState, setDragState] = useState<DragState>(INITIAL_DRAG_STATE());
   const dragStateRef = useRef<DragState>(dragState);
   dragStateRef.current = dragState;
 
@@ -38,7 +38,7 @@ export function useDragDrop() {
   );
 
   const handleDragEnd = useCallback(() => {
-    setDragState(INITIAL_DRAG_STATE);
+    setDragState(INITIAL_DRAG_STATE());
   }, []);
 
   const handleDrop = useCallback(() => {
@@ -46,7 +46,7 @@ export function useDragDrop() {
     if (newTree) {
       actions.setTree(newTree);
     }
-    setDragState(INITIAL_DRAG_STATE);
+    setDragState(INITIAL_DRAG_STATE());
   }, [state.tree, actions]);
 
   return {

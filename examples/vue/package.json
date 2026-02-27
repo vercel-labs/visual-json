@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "portless vue-example.visual-json vite",
     "build": "vite build",
     "preview": "vite preview",
     "check-types": "vue-tsc --noEmit"

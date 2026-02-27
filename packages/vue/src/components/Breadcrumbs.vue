@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from "vue";
+import { shallowRef, computed, watch, onMounted, onUnmounted } from "vue";
 import { useStudio } from "../composables/use-studio";
 
 defineProps<{
@@ -18,12 +18,12 @@ const selectedNode = computed(() =>
 );
 const currentPath = computed(() => selectedNode.value?.path ?? "/");
 
-const inputValue = ref(currentPath.value);
-const open = ref(false);
-const highlightIndex = ref(0);
-const inputRef = ref<HTMLInputElement | null>(null);
-const listRef = ref<HTMLDivElement | null>(null);
-const wrapperRef = ref<HTMLDivElement | null>(null);
+const inputValue = shallowRef(currentPath.value);
+const open = shallowRef(false);
+const highlightIndex = shallowRef(0);
+const inputRef = shallowRef<HTMLInputElement | null>(null);
+const listRef = shallowRef<HTMLDivElement | null>(null);
+const wrapperRef = shallowRef<HTMLDivElement | null>(null);
 
 watch(currentPath, (p) => {
   inputValue.value = p;

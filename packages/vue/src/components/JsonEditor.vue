@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, type CSSProperties } from "vue";
+import { shallowRef, watch, onMounted, onUnmounted, type CSSProperties } from "vue";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
 import { DEFAULT_CSS_VARS } from "@visual-json/ui-shared";
 import VisualJson from "./VisualJson.vue";
@@ -43,10 +43,10 @@ const emit = defineEmits<{
 
 const isControlled = props.value !== undefined;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const currentValue = ref<any>(
+const currentValue = shallowRef<any>(
   isControlled ? props.value : (props.defaultValue ?? {}),
 );
-const editorKey = ref(0);
+const editorKey = shallowRef(0);
 
 watch(
   () => props.value,
@@ -67,10 +67,10 @@ function handleChange(newValue: JsonValue) {
 }
 
 // Layout state
-const sidebarWidth = ref(280);
-const isNarrow = ref(false);
-const activePanel = ref<"tree" | "form">("tree");
-const containerRef = ref<HTMLDivElement | null>(null);
+const sidebarWidth = shallowRef(280);
+const isNarrow = shallowRef(false);
+const activePanel = shallowRef<"tree" | "form">("tree");
+const containerRef = shallowRef<HTMLDivElement | null>(null);
 let dragging = false;
 let startX = 0;
 let startWidth = 0;

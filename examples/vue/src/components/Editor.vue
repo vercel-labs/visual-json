@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from "vue";
-import type { JsonValue, JsonSchema } from "@visual-json/core";
-import { resolveSchema } from "@visual-json/core";
+import { reactive, useTemplateRef } from "vue";
 import { JsonEditor, DiffView } from "@visual-json/vue";
+import { useJsonDocument } from "../composables/use-json-document";
+import type { Sample } from "../composables/use-json-document";
 
 type ViewMode = "tree" | "raw" | "diff";
 
@@ -12,7 +12,7 @@ const VIEW_MODES: { id: ViewMode; label: string }[] = [
   { id: "diff", label: "Diff" },
 ];
 
-const samples: { name: string; filename: string; data: JsonValue }[] = [
+const samples: Sample[] = [
   {
     name: "package.json",
     filename: "package.json",
@@ -90,91 +90,44 @@ const samples: { name: string; filename: string; data: JsonValue }[] = [
   },
 ];
 
-const activeSample = ref(samples[0].filename);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const jsonValue = ref<any>(samples[0].data);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const originalJson = ref<any>(structuredClone(samples[0].data));
-const filename = ref(samples[0].filename);
-const schema = ref<JsonSchema | null>(null);
-const viewMode = ref<ViewMode>("tree");
-const sidebarOpen = ref(true);
-const isDragOver = ref(false);
-const rawText = ref(JSON.stringify(samples[0].data, null, 2));
-const rawError = ref<string | null>(null);
-const parseError = ref<string | null>(null);
-const pasteDialogOpen = ref(false);
-const pasteText = ref("");
-const settingsOpen = ref(false);
-const treeShowValues = ref(false);
-const treeShowCounts = ref(false);
-const editorShowDescriptions = ref(false);
-const editorShowCounts = ref(false);
+const {
+  jsonValue, originalJson, filename, activeSample, schema,
+  rawText, rawError, parseError,
+  loadJson, loadSample, handleJsonChange, handleRawChange,
+} = useJsonDocument(samples[0]);
 
-const dropRef = ref<HTMLDivElement | null>(null);
-const fileInputRef = ref<HTMLInputElement | null>(null);
+const ui = reactive({
+  viewMode: "tree" as ViewMode,
+  sidebarOpen: true,
+  isDragOver: false,
+  pasteDialogOpen: false,
+  pasteText: "",
+  settingsOpen: false,
+  treeShowValues: false,
+  treeShowCounts: false,
+  editorShowDescriptions: false,
+  editorShowCounts: false,
+});
 
-// Resolve schema when filename/value changes
-let cancelSchema = false;
-async function fetchSchema() {
-  cancelSchema = false;
-  try {
-    const s = await resolveSchema(jsonValue.value, filename.value);
-    if (!cancelSchema) schema.value = s;
-  } catch {
-    // ignore
-  }
-}
-
-fetchSchema();
-
-function loadJson(text: string, fname: string) {
-  try {
-    const parsed = JSON.parse(text);
-    jsonValue.value = parsed;
-    originalJson.value = structuredClone(parsed);
-    filename.value = fname;
-    activeSample.value = fname;
-    schema.value = null;
-    rawText.value = JSON.stringify(parsed, null, 2);
-    rawError.value = null;
-    parseError.value = null;
-    fetchSchema();
-  } catch {
-    parseError.value = "Invalid JSON";
-  }
-}
-
-function handleSampleChange(fname: string) {
-  const sample = samples.find((s) => s.filename === fname);
-  if (sample) {
-    activeSample.value = fname;
-    filename.value = fname;
-    jsonValue.value = sample.data;
-    originalJson.value = structuredClone(sample.data);
-    schema.value = null;
-    rawText.value = JSON.stringify(sample.data, null, 2);
-    rawError.value = null;
-    fetchSchema();
-  }
-}
+const dropZone = useTemplateRef<HTMLDivElement>("dropZone");
+const fileInput = useTemplateRef<HTMLInputElement>("fileInput");
 
 async function handlePaste() {
   try {
     const text = await navigator.clipboard.readText();
     loadJson(text, "pasted.json");
   } catch {
-    pasteText.value = "";
-    pasteDialogOpen.value = true;
+    ui.pasteText = "";
+    ui.pasteDialogOpen = true;
   }
 }
 
 function handlePasteSubmit() {
-  if (pasteText.value.trim()) {
-    loadJson(pasteText.value, "pasted.json");
+  if (ui.pasteText.trim()) {
+    loadJson(ui.pasteText, "pasted.json");
   }
-  pasteDialogOpen.value = false;
-  pasteText.value = "";
+  ui.pasteDialogOpen = false;
+  ui.pasteText = "";
 }
 
 function handleDownload() {
@@ -194,22 +147,6 @@ async function handleCopyJson() {
   } catch {}
 }
 
-function handleRawChange(newText: string) {
-  rawText.value = newText;
-  try {
-    const parsed = JSON.parse(newText);
-    rawError.value = null;
-    jsonValue.value = parsed;
-  } catch (e) {
-    rawError.value = e instanceof Error ? e.message : "Invalid JSON";
-  }
-}
-
-function handleJsonChange(val: JsonValue) {
-  jsonValue.value = val;
-  rawText.value = JSON.stringify(val, null, 2);
-}
-
 function handleFileInput(e: Event) {
   const file = (e.target as HTMLInputElement).files?.[0];
   if (file) {
@@ -225,22 +162,18 @@ function handleFileInput(e: Event) {
 // Drag-and-drop file onto page
 function handleDragOver(e: DragEvent) {
   if (!e.dataTransfer?.types.includes("Files")) return;
-  e.preventDefault();
-  isDragOver.value = true;
+  ui.isDragOver = true;
 }
 
 function handleDragLeave(e: DragEvent) {
   if (!e.dataTransfer?.types.includes("Files")) return;
-  e.preventDefault();
-  if (e.relatedTarget === null || !dropRef.value?.contains(e.relatedTarget as Node)) {
-    isDragOver.value = false;
+  if (e.relatedTarget === null || !dropZone.value?.contains(e.relatedTarget as Node)) {
+    ui.isDragOver = false;
   }
 }
 
 function handleFileDrop(e: DragEvent) {
-  if (!e.dataTransfer?.types.includes("Files")) return;
-  e.preventDefault();
-  isDragOver.value = false;
+  ui.isDragOver = false;
   const file = e.dataTransfer?.files[0];
   if (file) {
     const reader = new FileReader();
@@ -251,28 +184,12 @@ function handleFileDrop(e: DragEvent) {
   }
 }
 
-onMounted(() => {
-  const el = dropRef.value;
-  if (!el) return;
-  el.addEventListener("dragover", handleDragOver);
-  el.addEventListener("dragleave", handleDragLeave);
-  el.addEventListener("drop", handleFileDrop);
-});
-
-onUnmounted(() => {
-  cancelSchema = true;
-  const el = dropRef.value;
-  if (!el) return;
-  el.removeEventListener("dragover", handleDragOver);
-  el.removeEventListener("dragleave", handleDragLeave);
-  el.removeEventListener("drop", handleFileDrop);
-});
 </script>
 
 <template>
-  <div ref="dropRef" class="flex flex-col h-full bg-[var(--bg)] text-[var(--text)]">
+  <div ref="dropZone" class="flex flex-col h-full bg-[var(--bg)] text-[var(--text)]" @dragover.prevent="handleDragOver" @dragleave="handleDragLeave" @drop.prevent="handleFileDrop">
     <!-- Drop overlay -->
-    <div v-if="isDragOver" class="absolute inset-0 z-50 flex items-center justify-center bg-[var(--drop-overlay-bg)] pointer-events-none">
+    <div v-if="ui.isDragOver" class="absolute inset-0 z-50 flex items-center justify-center bg-[var(--drop-overlay-bg)] pointer-events-none">
       <div class="border-2 border-dashed border-[#007acc] rounded-lg px-12 py-8 text-base font-mono text-[#ccc]">Drop JSON file here</div>
     </div>
 
@@ -288,16 +205,16 @@ onUnmounted(() => {
     <div class="flex items-center gap-1.5 px-3 h-11 bg-[var(--toolbar-bg)] border-b border-[var(--toolbar-border)] shrink-0">
       <button
         class="toolbar-btn"
-        :title="sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
-        @click="() => (sidebarOpen = !sidebarOpen)"
+        :title="ui.sidebarOpen ? 'Hide sidebar' : 'Show sidebar'"
+        @click="() => (ui.sidebarOpen = !ui.sidebarOpen)"
       >
-        <div :class="sidebarOpen ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left'" />
+        <div :class="ui.sidebarOpen ? 'i-lucide-panel-left-close' : 'i-lucide-panel-left'" />
       </button>
 
       <select
         class="bg-[var(--select-bg)] border border-[var(--border)] rounded text-[var(--text)] text-xs font-inherit py-0.75 px-1.5 cursor-pointer outline-none"
         :value="activeSample"
-        @change="(e) => handleSampleChange((e.target as HTMLSelectElement).value)"
+        @change="(e) => loadSample((e.target as HTMLSelectElement).value, samples)"
       >
         <option v-for="s in samples" :key="s.filename" :value="s.filename">
           {{ s.name }}
@@ -307,13 +224,13 @@ onUnmounted(() => {
       <div class="w-px h-5 bg-[var(--border)] mx-0.5" />
 
       <input
-        ref="fileInputRef"
+        ref="fileInput"
         type="file"
         accept=".json,.jsonc,.json5"
         class="hidden"
         @change="handleFileInput"
       />
-      <button class="toolbar-btn" title="Open file" @click="() => fileInputRef?.click()">
+      <button class="toolbar-btn" title="Open file" @click="() => fileInput?.click()">
         <div class="i-lucide-folder-open" />
       </button>
       <button class="toolbar-btn" title="Paste JSON" @click="handlePaste">
@@ -334,8 +251,8 @@ onUnmounted(() => {
           v-for="m in VIEW_MODES"
           :key="m.id"
           class="view-toggle-btn"
-          :class="{ active: viewMode === m.id }"
-          @click="() => (viewMode = m.id)"
+          :class="{ active: ui.viewMode === m.id }"
+          @click="() => (ui.viewMode = m.id)"
         >
           {{ m.label }}
         </button>
@@ -344,7 +261,7 @@ onUnmounted(() => {
       <button
         class="toolbar-btn"
         title="Settings"
-        @click="() => (settingsOpen = true)"
+        @click="() => (ui.settingsOpen = true)"
       >
         <div class="i-lucide-settings" />
       </button>
@@ -353,7 +270,7 @@ onUnmounted(() => {
     <!-- Editor area -->
     <div class="flex-1 min-h-0 relative">
       <!-- Raw view -->
-      <div v-if="viewMode === 'raw'" class="flex flex-col h-full bg-[var(--bg)]">
+      <div v-if="ui.viewMode === 'raw'" class="flex flex-col h-full bg-[var(--bg)]">
         <div v-if="rawError" class="error-banner justify-start!">
           {{ rawError }}
         </div>
@@ -367,7 +284,7 @@ onUnmounted(() => {
 
       <!-- Diff view -->
       <DiffView
-        v-else-if="viewMode === 'diff'"
+        v-else-if="ui.viewMode === 'diff'"
         :original-json="originalJson"
         :current-json="jsonValue"
         :style="{ height: '100%' }"
@@ -378,11 +295,11 @@ onUnmounted(() => {
         v-else
         :value="jsonValue"
         :schema="schema"
-        :tree-show-values="treeShowValues"
-        :tree-show-counts="treeShowCounts"
-        :editor-show-descriptions="editorShowDescriptions"
-        :editor-show-counts="editorShowCounts"
-        :sidebar-open="sidebarOpen"
+        :tree-show-values="ui.treeShowValues"
+        :tree-show-counts="ui.treeShowCounts"
+        :editor-show-descriptions="ui.editorShowDescriptions"
+        :editor-show-counts="ui.editorShowCounts"
+        :sidebar-open="ui.sidebarOpen"
         :style="{ height: '100%' }"
         @change="handleJsonChange"
       />
@@ -390,21 +307,21 @@ onUnmounted(() => {
 
     <!-- Paste dialog -->
     <div
-      v-if="pasteDialogOpen"
+      v-if="ui.pasteDialogOpen"
       class="fixed inset-0 z-100 bg-black/40 flex items-center justify-center"
-      @click.self="() => (pasteDialogOpen = false)"
+      @click.self="() => (ui.pasteDialogOpen = false)"
     >
       <div class="settings-panel min-w-100">
         <h3>Paste JSON</h3>
         <textarea
-          :value="pasteText"
+          :value="ui.pasteText"
           placeholder="Paste your JSON here..."
           spellcheck="false"
           class="w-full min-h-45 bg-[var(--input-bg)] border border-[var(--input-border)] rounded text-[var(--text)] font-mono text-13px p-2 resize-y outline-none box-border"
-          @input="(e) => (pasteText = (e.target as HTMLTextAreaElement).value)"
+          @input="(e) => (ui.pasteText = (e.target as HTMLTextAreaElement).value)"
         />
         <div class="flex gap-2 mt-3 justify-end">
-          <button class="settings-close w-auto! py-1.5 px-4" @click="() => (pasteDialogOpen = false)">
+          <button class="settings-close w-auto! py-1.5 px-4" @click="() => (ui.pasteDialogOpen = false)">
             Cancel
           </button>
           <button
@@ -419,9 +336,9 @@ onUnmounted(() => {
 
     <!-- Settings panel -->
     <div
-      v-if="settingsOpen"
+      v-if="ui.settingsOpen"
       class="fixed inset-0 z-100 bg-black/40 flex items-center justify-center"
-      @click.self="() => (settingsOpen = false)"
+      @click.self="() => (ui.settingsOpen = false)"
     >
       <div class="settings-panel">
         <h3>Settings</h3>
@@ -432,8 +349,7 @@ onUnmounted(() => {
             <label class="toggle">
               <input
                 type="checkbox"
-                :checked="treeShowValues"
-                @change="(e) => (treeShowValues = (e.target as HTMLInputElement).checked)"
+                v-model="ui.treeShowValues"
               />
               <span class="toggle-slider" />
             </label>
@@ -443,8 +359,7 @@ onUnmounted(() => {
             <label class="toggle">
               <input
                 type="checkbox"
-                :checked="treeShowCounts"
-                @change="(e) => (treeShowCounts = (e.target as HTMLInputElement).checked)"
+                v-model="ui.treeShowCounts"
               />
               <span class="toggle-slider" />
             </label>
@@ -457,11 +372,7 @@ onUnmounted(() => {
             <label class="toggle">
               <input
                 type="checkbox"
-                :checked="editorShowDescriptions"
-                @change="
-                  (e) =>
-                    (editorShowDescriptions = (e.target as HTMLInputElement).checked)
-                "
+                v-model="ui.editorShowDescriptions"
               />
               <span class="toggle-slider" />
             </label>
@@ -471,16 +382,13 @@ onUnmounted(() => {
             <label class="toggle">
               <input
                 type="checkbox"
-                :checked="editorShowCounts"
-                @change="
-                  (e) => (editorShowCounts = (e.target as HTMLInputElement).checked)
-                "
+                v-model="ui.editorShowCounts"
               />
               <span class="toggle-slider" />
             </label>
           </div>
         </div>
-        <button class="settings-close" @click="() => (settingsOpen = false)">
+        <button class="settings-close" @click="() => (ui.settingsOpen = false)">
           Close
         </button>
       </div>

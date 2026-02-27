@@ -1,4 +1,4 @@
-import { ref } from "vue";
+import { shallowRef } from "vue";
 import { isDescendant } from "@visual-json/core";
 import {
   type DragState,
@@ -11,7 +11,7 @@ export type { DragState } from "@visual-json/ui-shared";
 
 export function useDragDrop() {
   const { state, actions } = useStudio();
-  const dragState = ref<DragState>({ ...INITIAL_DRAG_STATE });
+  const dragState = shallowRef<DragState>(INITIAL_DRAG_STATE());
 
   function handleDragStart(nodeId: string) {
     dragState.value = {
@@ -33,7 +33,7 @@ export function useDragDrop() {
   }
 
   function handleDragEnd() {
-    dragState.value = { ...INITIAL_DRAG_STATE };
+    dragState.value = INITIAL_DRAG_STATE();
   }
 
   function handleDrop() {
@@ -41,7 +41,7 @@ export function useDragDrop() {
     if (newTree) {
       actions.setTree(newTree);
     }
-    dragState.value = { ...INITIAL_DRAG_STATE };
+    dragState.value = INITIAL_DRAG_STATE();
   }
 
   return {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, provide } from "vue";
+import { shallowRef, computed, watch, onMounted, onUnmounted, provide } from "vue";
 import {
   fromJson,
   toJson,
@@ -27,12 +27,12 @@ const emit = defineEmits<{
   change: [value: JsonValue];
 }>();
 
-const tree = ref<TreeState>(fromJson(props.value));
-const selectedNodeId = ref<string | null>(null);
-const expandedNodeIds = ref<Set<string>>(new Set([tree.value.root.id]));
+const tree = shallowRef<TreeState>(fromJson(props.value));
+const selectedNodeId = shallowRef<string | null>(null);
+const expandedNodeIds = shallowRef<Set<string>>(new Set([tree.value.root.id]));
 
 let history = new History();
-const historyVersion = ref(0);
+const historyVersion = shallowRef(0);
 const canUndo = computed(() => {
   historyVersion.value;
   return history.canUndo;
@@ -42,9 +42,9 @@ const canRedo = computed(() => {
   return history.canRedo;
 });
 
-const searchQuery = ref("");
-const searchMatches = ref<SearchMatch[]>([]);
-const searchMatchIndex = ref(0);
+const searchQuery = shallowRef("");
+const searchMatches = shallowRef<SearchMatch[]>([]);
+const searchMatchIndex = shallowRef(0);
 const searchMatchNodeIds = computed(
   () => new Set(searchMatches.value.map((m) => m.nodeId)),
 );
