@@ -1,9 +1,17 @@
 import { type InjectionKey, type Ref, type ComputedRef } from "vue";
-import type { TreeState, JsonSchema, SearchMatch } from "@visual-json/core";
+import type {
+  TreeNode,
+  TreeState,
+  JsonSchema,
+  SearchMatch,
+} from "@visual-json/core";
 
 export interface StudioState {
   tree: Ref<TreeState>;
-  selectedNodeId: Ref<string | null>;
+  focusedNodeId: Ref<string | null>;
+  selectedNodeIds: Ref<Set<string>>;
+  anchorNodeId: Ref<string | null>;
+  drillDownNodeId: Ref<string | null>;
   expandedNodeIds: Ref<Set<string>>;
   schema: Ref<JsonSchema | null>;
   searchQuery: Ref<string>;
@@ -17,6 +25,16 @@ export interface StudioState {
 export interface StudioActions {
   setTree: (tree: TreeState) => void;
   selectNode: (nodeId: string | null) => void;
+  selectAndDrillDown: (nodeId: string | null) => void;
+  toggleNodeSelection: (nodeId: string) => void;
+  selectNodeRange: (toNodeId: string) => void;
+  setSelection: (
+    focusedId: string | null,
+    selectedIds: Set<string>,
+    anchorId: string | null,
+  ) => void;
+  setVisibleNodesOverride: (nodes: TreeNode[] | null) => void;
+  drillDown: (nodeId: string | null) => void;
   toggleExpand: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;
   collapseNode: (nodeId: string) => void;

@@ -6,7 +6,6 @@ import {
   type CSSProperties,
 } from "react";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
-import { DEFAULT_CSS_VARS } from "@visual-json/ui-shared";
 import { VisualJson } from "./visual-json";
 import { TreeView } from "./tree-view";
 import { FormView } from "./form-view";
@@ -28,6 +27,8 @@ export interface JsonEditorProps {
   editorShowCounts?: boolean;
   sidebarOpen?: boolean;
 }
+
+import { DEFAULT_CSS_VARS } from "./theme";
 
 export function JsonEditor({
   value,

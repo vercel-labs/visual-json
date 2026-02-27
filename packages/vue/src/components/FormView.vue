@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { shallowRef, computed, watch, provide } from "vue";
-import { removeNode, type JsonSchemaProperty } from "@visual-json/core";
+import { shallowRef, computed, watch, provide, onMounted, onUnmounted } from "vue";
+import type { JsonSchemaProperty } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
 import { getVisibleNodes, getDisplayKey } from "@visual-json/ui-shared";
+import { deleteSelectedNodes, computeSelectAllIds } from "../selection-utils";
 import { FORM_VIEW_KEY } from "./form-view-context";
 import Breadcrumbs from "./Breadcrumbs.vue";
 import FormField from "./FormField.vue";
@@ -18,28 +19,24 @@ const props = withDefaults(
 );
 
 const { state, actions } = useStudio();
-const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
-  useDragDrop();
 
 const containerRef = shallowRef<HTMLDivElement | null>(null);
 const isFocused = shallowRef(false);
-const formSelectedNodeId = shallowRef<string | null>(null);
 const editingNodeId = shallowRef<string | null>(null);
 const collapsedIds = shallowRef<Set<string>>(new Set());
 let preEditTree = state.tree.value;
 
 const displayNode = computed(() => {
-  const selectedNode = state.selectedNodeId.value
-    ? state.tree.value.nodesById.get(state.selectedNodeId.value)
+  const drillDownNode = state.drillDownNodeId.value
+    ? state.tree.value.nodesById.get(state.drillDownNodeId.value)
     : null;
-  return selectedNode ?? state.tree.value.root;
+  return drillDownNode ?? state.tree.value.root;
 });
 
 // Reset form state when display node changes
 watch(
   () => displayNode.value.id,
   () => {
-    formSelectedNodeId.value = null;
     editingNodeId.value = null;
     collapsedIds.value = new Set();
   },
@@ -48,6 +45,20 @@ watch(
 const visibleNodes = computed(() =>
   getVisibleNodes(displayNode.value, (id) => !collapsedIds.value.has(id)),
 );
+
+const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
+  useDragDrop(visibleNodes, state.selectedNodeIds);
+
+// Override visible nodes for range selection in form view
+onMounted(() => {
+  actions.setVisibleNodesOverride(visibleNodes.value);
+});
+onUnmounted(() => {
+  actions.setVisibleNodesOverride(null);
+});
+watch(visibleNodes, (nodes) => {
+  actions.setVisibleNodesOverride(nodes);
+});
 
 const metrics = computed(() => {
   let maxKey = 1;
@@ -76,9 +87,16 @@ const rootSchema = computed<JsonSchemaProperty | undefined>(
   () => state.schema.value ?? undefined,
 );
 
-function onSelect(nodeId: string) {
-  formSelectedNodeId.value = nodeId;
+function onSelect(nodeId: string, e: MouseEvent) {
   editingNodeId.value = null;
+  if (e.shiftKey) {
+    actions.setVisibleNodesOverride(visibleNodes.value);
+    actions.selectNodeRange(nodeId);
+  } else if (e.metaKey || e.ctrlKey) {
+    actions.toggleNodeSelection(nodeId);
+  } else {
+    actions.selectNode(nodeId);
+  }
 }
 
 function onToggleCollapse(nodeId: string) {
@@ -119,16 +137,24 @@ function handleKeyDown(e: KeyboardEvent) {
     return;
   }
 
-  const currentIndex = visibleNodes.value.findIndex(
-    (n) => n.id === formSelectedNodeId.value,
+  let currentIndex = visibleNodes.value.findIndex(
+    (n) => n.id === state.focusedNodeId.value,
   );
+  if (currentIndex === -1 && visibleNodes.value.length > 0) {
+    currentIndex = 0;
+  }
 
   switch (e.key) {
     case "ArrowDown": {
       e.preventDefault();
       const next = visibleNodes.value[currentIndex + 1];
       if (next) {
-        formSelectedNodeId.value = next.id;
+        if (e.shiftKey) {
+          actions.setVisibleNodesOverride(visibleNodes.value);
+          actions.selectNodeRange(next.id);
+        } else {
+          actions.selectNode(next.id);
+        }
         scrollToNode(next.id);
       }
       break;
@@ -137,7 +163,12 @@ function handleKeyDown(e: KeyboardEvent) {
       e.preventDefault();
       const prev = visibleNodes.value[currentIndex - 1];
       if (prev) {
-        formSelectedNodeId.value = prev.id;
+        if (e.shiftKey) {
+          actions.setVisibleNodesOverride(visibleNodes.value);
+          actions.selectNodeRange(prev.id);
+        } else {
+          actions.selectNode(prev.id);
+        }
         scrollToNode(prev.id);
       }
       break;
@@ -152,7 +183,7 @@ function handleKeyDown(e: KeyboardEvent) {
           next.delete(node.id);
           collapsedIds.value = next;
         } else if (node.children.length > 0) {
-          formSelectedNodeId.value = node.children[0].id;
+          actions.selectNode(node.children[0].id);
           scrollToNode(node.children[0].id);
         }
       }
@@ -174,7 +205,7 @@ function handleKeyDown(e: KeyboardEvent) {
           (n) => n.id === current.parentId,
         );
         if (parentInVisible) {
-          formSelectedNodeId.value = parentInVisible.id;
+          actions.selectNode(parentInVisible.id);
           scrollToNode(parentInVisible.id);
         }
       }
@@ -182,33 +213,54 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     case "Enter": {
       e.preventDefault();
-      if (formSelectedNodeId.value) {
+      if (state.focusedNodeId.value) {
         preEditTree = state.tree.value;
-        editingNodeId.value = formSelectedNodeId.value;
+        actions.selectNode(state.focusedNodeId.value);
+        editingNodeId.value = state.focusedNodeId.value;
+      }
+      break;
+    }
+    case "a": {
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        const ids = computeSelectAllIds(
+          state.tree.value,
+          state.focusedNodeId.value,
+          state.selectedNodeIds.value,
+        );
+        if (ids) {
+          actions.setSelection(
+            state.focusedNodeId.value,
+            ids,
+            state.focusedNodeId.value,
+          );
+        }
       }
       break;
     }
     case "Escape": {
       e.preventDefault();
-      editingNodeId.value = null;
+      if (state.selectedNodeIds.value.size > 1 && state.focusedNodeId.value) {
+        actions.selectNode(state.focusedNodeId.value);
+      } else {
+        actions.setSelection(null, new Set<string>(), null);
+      }
       break;
     }
     case "Delete":
     case "Backspace": {
       e.preventDefault();
-      const toDelete =
-        currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
-      if (toDelete && toDelete.parentId) {
-        const nextSelect =
-          visibleNodes.value[currentIndex + 1] ??
-          visibleNodes.value[currentIndex - 1];
-        const newTree = removeNode(state.tree.value, toDelete.id);
-        actions.setTree(newTree);
-        if (nextSelect && nextSelect.id !== toDelete.id) {
-          formSelectedNodeId.value = nextSelect.id;
-        } else {
-          formSelectedNodeId.value = null;
-        }
+      const { newTree, nextFocusId } = deleteSelectedNodes(
+        state.tree.value,
+        state.selectedNodeIds.value,
+        visibleNodes.value,
+      );
+      if (newTree === state.tree.value) break;
+      actions.setTree(newTree);
+      if (nextFocusId) {
+        actions.selectNode(nextFocusId);
+      } else {
+        actions.setSelection(null, new Set<string>(), null);
       }
       break;
     }
@@ -220,7 +272,6 @@ provide(FORM_VIEW_KEY, {
   rootSchema,
   showDescriptions: props.showDescriptions,
   showCounts: props.showCounts,
-  formSelectedNodeId,
   editingNodeId,
   collapsedIds,
   maxKeyLength,

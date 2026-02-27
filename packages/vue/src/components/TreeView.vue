@@ -2,7 +2,6 @@
 import { shallowRef, computed, watch } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import {
-  removeNode,
   duplicateNode,
   changeType,
   toJson,
@@ -11,6 +10,7 @@ import {
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
 import { getVisibleNodes } from "@visual-json/ui-shared";
+import { deleteSelectedNodes, computeSelectAllIds } from "../selection-utils";
 import TreeNodeRow from "./TreeNodeRow.vue";
 import ContextMenu, { type ContextMenuEntry } from "./ContextMenu.vue";
 
@@ -25,11 +25,6 @@ const props = withDefaults(
 
 const { state, actions } = useStudio();
 const containerRef = shallowRef<HTMLDivElement | null>(null);
-const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
-  useDragDrop();
-
-const contextMenu = shallowRef<{ x: number; y: number; node: TreeNode } | null>(null);
-const isFocused = shallowRef(false);
 
 const visibleNodes = computed(() =>
   getVisibleNodes(state.tree.value.root, (id) =>
@@ -37,8 +32,19 @@ const visibleNodes = computed(() =>
   ),
 );
 
+const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
+  useDragDrop(visibleNodes, state.selectedNodeIds);
+
+const contextMenu = shallowRef<{ x: number; y: number; node: TreeNode } | null>(null);
+const isFocused = shallowRef(false);
+
+function handleSelectRange(nodeId: string) {
+  actions.setVisibleNodesOverride(visibleNodes.value);
+  actions.selectNodeRange(nodeId);
+}
+
 watch(
-  () => state.selectedNodeId.value,
+  () => state.focusedNodeId.value,
   (nodeId) => {
     if (nodeId && containerRef.value) {
       const el = containerRef.value.querySelector(`[data-node-id="${nodeId}"]`);
@@ -49,7 +55,9 @@ watch(
 
 function handleContextMenu(e: MouseEvent, node: TreeNode) {
   e.preventDefault();
-  actions.selectNode(node.id);
+  if (!state.selectedNodeIds.value.has(node.id)) {
+    actions.selectAndDrillDown(node.id);
+  }
   contextMenu.value = { x: e.clientX, y: e.clientY, node };
 }
 
@@ -128,8 +136,19 @@ function buildContextMenuItems(node: TreeNode): ContextMenuEntry[] {
     items.push({
       label: "Delete",
       action: () => {
-        const newTree = removeNode(state.tree.value, node.id);
-        actions.setTree(newTree);
+        const { newTree, nextFocusId } = deleteSelectedNodes(
+          state.tree.value,
+          state.selectedNodeIds.value,
+          visibleNodes.value,
+        );
+        if (newTree !== state.tree.value) {
+          actions.setTree(newTree);
+          if (nextFocusId) {
+            actions.selectNode(nextFocusId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
+          }
+        }
       },
     });
   }
@@ -139,20 +158,32 @@ function buildContextMenuItems(node: TreeNode): ContextMenuEntry[] {
 
 function handleKeyDown(e: KeyboardEvent) {
   const currentIndex = visibleNodes.value.findIndex(
-    (n) => n.id === state.selectedNodeId.value,
+    (n) => n.id === state.focusedNodeId.value,
   );
 
   switch (e.key) {
     case "ArrowDown": {
       e.preventDefault();
       const next = visibleNodes.value[currentIndex + 1];
-      if (next) actions.selectNode(next.id);
+      if (next) {
+        if (e.shiftKey) {
+          handleSelectRange(next.id);
+        } else {
+          actions.selectNode(next.id);
+        }
+      }
       break;
     }
     case "ArrowUp": {
       e.preventDefault();
       const prev = visibleNodes.value[currentIndex - 1];
-      if (prev) actions.selectNode(prev.id);
+      if (prev) {
+        if (e.shiftKey) {
+          handleSelectRange(prev.id);
+        } else {
+          actions.selectNode(prev.id);
+        }
+      }
       break;
     }
     case "ArrowRight": {
@@ -181,20 +212,47 @@ function handleKeyDown(e: KeyboardEvent) {
       }
       break;
     }
+    case "a": {
+      if (e.metaKey || e.ctrlKey) {
+        e.preventDefault();
+        const ids = computeSelectAllIds(
+          state.tree.value,
+          state.focusedNodeId.value,
+          state.selectedNodeIds.value,
+        );
+        if (ids) {
+          actions.setSelection(
+            state.focusedNodeId.value,
+            ids,
+            state.focusedNodeId.value,
+          );
+        }
+      }
+      break;
+    }
+    case "Escape": {
+      e.preventDefault();
+      if (state.selectedNodeIds.value.size > 1 && state.focusedNodeId.value) {
+        actions.selectNode(state.focusedNodeId.value);
+      } else {
+        actions.setSelection(null, new Set<string>(), null);
+      }
+      break;
+    }
     case "Delete":
     case "Backspace": {
       e.preventDefault();
-      const toDelete =
-        currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
-      if (toDelete && toDelete.parentId) {
-        const nextSelect =
-          visibleNodes.value[currentIndex + 1] ??
-          visibleNodes.value[currentIndex - 1];
-        const newTree = removeNode(state.tree.value, toDelete.id);
-        actions.setTree(newTree);
-        if (nextSelect && nextSelect.id !== toDelete.id) {
-          actions.selectNode(nextSelect.id);
-        }
+      const { newTree, nextFocusId } = deleteSelectedNodes(
+        state.tree.value,
+        state.selectedNodeIds.value,
+        visibleNodes.value,
+      );
+      if (newTree === state.tree.value) break;
+      actions.setTree(newTree);
+      if (nextFocusId) {
+        actions.selectNode(nextFocusId);
+      } else {
+        actions.setSelection(null, new Set<string>(), null);
       }
       break;
     }
@@ -232,6 +290,7 @@ function handleKeyDown(e: KeyboardEvent) {
       @drag-end="handleDragEnd"
       @drop="handleDrop"
       @context-menu="handleContextMenu"
+      @select-range="handleSelectRange"
     />
   </div>
   <ContextMenu

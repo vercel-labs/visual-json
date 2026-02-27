@@ -5,7 +5,7 @@ import type {
   TreeNode,
   TreeState,
 } from "./types";
-import { toJson, getNodeType, buildSubtree } from "./tree";
+import { toJson, getNodeType, buildSubtree, reparentSubtree } from "./tree";
 
 function rebuildMap(root: TreeNode): Map<string, TreeNode> {
   const map = new Map<string, TreeNode>();
@@ -144,9 +144,46 @@ export function addProperty(
 
   return clonePathToNode(state, parentId, (p) => {
     const parentPath = p.path === "/" ? "" : p.path;
-    const nodesById = new Map<string, TreeNode>();
-    const newChild = buildSubtree(key, value, parentPath, p.id, nodesById);
+    const newChild = buildSubtree(key, value, parentPath, p.id, new Map());
     return { ...p, children: [...p.children, newChild] };
+  });
+}
+
+export function insertProperty(
+  state: TreeState,
+  parentId: string,
+  key: string,
+  value: JsonValue,
+  index: number,
+): TreeState {
+  const parent = state.nodesById.get(parentId);
+  if (!parent) return state;
+
+  return clonePathToNode(state, parentId, (p) => {
+    const parentPath = p.path === "/" ? "" : p.path;
+    const newChild = buildSubtree(key, value, parentPath, p.id, new Map());
+    const newChildren = [...p.children];
+    newChildren.splice(index, 0, newChild);
+    return reindexArrayChildren({ ...p, children: newChildren });
+  });
+}
+
+export function insertNode(
+  state: TreeState,
+  parentId: string,
+  node: TreeNode,
+  index: number,
+): TreeState {
+  const parent = state.nodesById.get(parentId);
+  if (!parent) return state;
+
+  return clonePathToNode(state, parentId, (p) => {
+    const parentPath = p.path === "/" ? "" : p.path;
+    const key = p.type === "array" ? String(index) : node.key;
+    const reparented = reparentSubtree(node, key, parentPath, p.id);
+    const newChildren = [...p.children];
+    newChildren.splice(index, 0, reparented);
+    return reindexArrayChildren({ ...p, children: newChildren });
   });
 }
 
@@ -182,13 +219,12 @@ export function moveNode(
 
   return clonePathToNode(removed, newParentId, (p) => {
     const parentPath = p.path === "/" ? "" : p.path;
-    const nodesById = new Map<string, TreeNode>();
     const newChild = buildSubtree(
       p.type === "array" ? String(index ?? p.children.length) : node.key,
       nodeValue,
       parentPath,
       p.id,
-      nodesById,
+      new Map(),
     );
     const newChildren = [...p.children];
     const insertAt = index ?? newChildren.length;
@@ -210,6 +246,51 @@ export function reorderChildren(
     const newChildren = [...p.children];
     const [item] = newChildren.splice(fromIndex, 1);
     newChildren.splice(toIndex, 0, item);
+    return reindexArrayChildren({ ...p, children: newChildren });
+  });
+}
+
+export function reorderChildrenMulti(
+  state: TreeState,
+  parentId: string,
+  movedIds: string[],
+  targetSiblingId: string,
+  position: "before" | "after",
+): TreeState {
+  const parent = state.nodesById.get(parentId);
+  if (!parent) return state;
+
+  const movedSet = new Set(movedIds);
+
+  return clonePathToNode(state, parentId, (p) => {
+    const remaining = p.children.filter((c) => !movedSet.has(c.id));
+    let insertIdx = remaining.findIndex((c) => c.id === targetSiblingId);
+    if (insertIdx === -1) {
+      if (movedSet.has(targetSiblingId)) {
+        const origIdx = p.children.findIndex((c) => c.id === targetSiblingId);
+        const origMap = new Map(p.children.map((c, i) => [c.id, i]));
+        if (position === "after") {
+          insertIdx = remaining.findIndex(
+            (c) => (origMap.get(c.id) ?? -1) > origIdx,
+          );
+          if (insertIdx === -1) insertIdx = remaining.length;
+        } else {
+          insertIdx = remaining.findIndex(
+            (c) => (origMap.get(c.id) ?? -1) >= origIdx,
+          );
+          if (insertIdx === -1) insertIdx = remaining.length;
+        }
+      } else {
+        insertIdx = position === "after" ? remaining.length : 0;
+      }
+    } else if (position === "after") {
+      insertIdx++;
+    }
+    const moved = movedIds
+      .map((id) => p.children.find((c) => c.id === id))
+      .filter((c): c is TreeNode => c !== undefined);
+    const newChildren = [...remaining];
+    newChildren.splice(insertIdx, 0, ...moved);
     return reindexArrayChildren({ ...p, children: newChildren });
   });
 }
@@ -279,13 +360,12 @@ export function duplicateNode(state: TreeState, nodeId: string): TreeState {
     const idx = p.children.findIndex((c) => c.id === nodeId);
     const parentPath = p.path === "/" ? "" : p.path;
     const newKey = p.type === "array" ? String(idx + 1) : `${node.key}_copy`;
-    const nodesById = new Map<string, TreeNode>();
     const newChild = buildSubtree(
       newKey,
       structuredClone(nodeValue),
       parentPath,
       p.id,
-      nodesById,
+      new Map(),
     );
     const newChildren = [...p.children];
     newChildren.splice(idx + 1, 0, newChild);

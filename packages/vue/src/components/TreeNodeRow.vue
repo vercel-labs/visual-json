@@ -2,9 +2,8 @@
 import { shallowRef } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
-import { getDisplayKey } from "@visual-json/ui-shared";
+import { getDisplayKey, setMultiDragImage } from "@visual-json/ui-shared";
 import type { DragState } from "../composables/use-drag-drop";
-import type { ContextMenuEntry } from "./ContextMenu.vue";
 
 // Self-import for recursive usage
 import TreeNodeRow from "./TreeNodeRow.vue";
@@ -24,13 +23,14 @@ const emit = defineEmits<{
   dragEnd: [];
   drop: [];
   contextMenu: [e: MouseEvent, node: TreeNode];
+  selectRange: [nodeId: string];
 }>();
 
 const { state, actions } = useStudio();
 const hovered = shallowRef(false);
 
 function isSelected() {
-  return state.selectedNodeId.value === props.node.id;
+  return state.selectedNodeIds.value.has(props.node.id);
 }
 function isExpanded() {
   return state.expandedNodeIds.value.has(props.node.id);
@@ -70,24 +70,24 @@ function handleDragOver(e: DragEvent) {
   emit("dragOver", props.node.id, position);
 }
 
-function getBorderTop() {
+function getBorderTopColor() {
   if (
     props.dragState.dropTargetNodeId === props.node.id &&
     props.dragState.dropPosition === "before"
   ) {
-    return "2px solid var(--vj-accent, #007acc)";
+    return "var(--vj-accent, #007acc)";
   }
-  return "none";
+  return "transparent";
 }
 
-function getBorderBottom() {
+function getBorderBottomColor() {
   if (
     props.dragState.dropTargetNodeId === props.node.id &&
     props.dragState.dropPosition === "after"
   ) {
-    return "2px solid var(--vj-accent, #007acc)";
+    return "var(--vj-accent, #007acc)";
   }
-  return "none";
+  return "transparent";
 }
 
 function getRowBg() {
@@ -105,6 +105,27 @@ function getRowBg() {
   if (hov) return "var(--vj-bg-hover, #2a2d2e)";
   return "transparent";
 }
+
+function handleClick(e: MouseEvent) {
+  if (e.shiftKey) {
+    emit("selectRange", props.node.id);
+  } else if (e.metaKey || e.ctrlKey) {
+    actions.toggleNodeSelection(props.node.id);
+  } else {
+    actions.selectAndDrillDown(props.node.id);
+  }
+}
+
+function handleDragStart(e: DragEvent) {
+  e.dataTransfer!.effectAllowed = "move";
+  if (
+    state.selectedNodeIds.value.size > 1 &&
+    state.selectedNodeIds.value.has(props.node.id)
+  ) {
+    setMultiDragImage(e.dataTransfer!, state.selectedNodeIds.value.size);
+  }
+  emit("dragStart", props.node.id);
+}
 </script>
 
 <template>
@@ -118,30 +139,26 @@ function getRowBg() {
       display: 'flex',
       alignItems: 'center',
       gap: '6px',
-      padding: '3px 8px',
+      padding: '1px 8px',
       paddingLeft: 8 + depth * 16 + 'px',
       cursor: 'pointer',
       backgroundColor: getRowBg(),
       minHeight: '28px',
       userSelect: 'none',
-      opacity: dragState.draggedNodeId === node.id ? 0.4 : 1,
-      borderTop: getBorderTop(),
-      borderBottom: getBorderBottom(),
+      opacity: dragState.draggedNodeIds.has(node.id) ? 0.4 : 1,
+      borderTop: `2px solid ${getBorderTopColor()}`,
+      borderBottom: `2px solid ${getBorderBottomColor()}`,
+      boxSizing: 'border-box',
       color:
         isSelected() && isFocused
           ? 'var(--vj-text-selected, var(--vj-text, #cccccc))'
           : 'var(--vj-text, #cccccc)',
     }"
-    @click="() => actions.selectNode(node.id)"
+    @click="handleClick"
     @mouseenter="() => (hovered = true)"
     @mouseleave="() => (hovered = false)"
     @contextmenu="(e) => emit('contextMenu', e, node)"
-    @dragstart="
-      (e) => {
-        e.dataTransfer!.effectAllowed = 'move';
-        emit('dragStart', node.id);
-      }
-    "
+    @dragstart="handleDragStart"
     @dragover="handleDragOver"
     @dragend="() => emit('dragEnd')"
     @drop.prevent="() => emit('drop')"
@@ -229,6 +246,7 @@ function getRowBg() {
       @drag-end="() => emit('dragEnd')"
       @drop="() => emit('drop')"
       @context-menu="(e, n) => emit('contextMenu', e, n)"
+      @select-range="(id) => emit('selectRange', id)"
     />
   </template>
 </template>

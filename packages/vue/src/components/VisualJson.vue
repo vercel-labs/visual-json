@@ -9,11 +9,13 @@ import {
   type JsonValue,
   type JsonSchema,
   type TreeState,
+  type TreeNode,
   type SearchMatch,
 } from "@visual-json/core";
-import { collectAllIds } from "@visual-json/ui-shared";
+import { collectAllIds, getVisibleNodes } from "@visual-json/ui-shared";
 import { STUDIO_KEY } from "../provide-inject";
 import type { StudioState, StudioActions } from "../provide-inject";
+import { computeRangeIds } from "../selection-utils";
 
 const props = withDefaults(
   defineProps<{
@@ -28,8 +30,17 @@ const emit = defineEmits<{
 }>();
 
 const tree = shallowRef<TreeState>(fromJson(props.value));
-const selectedNodeId = shallowRef<string | null>(null);
+const focusedNodeId = shallowRef<string | null>(null);
+const selectedNodeIds = shallowRef<Set<string>>(new Set<string>());
+const anchorNodeId = shallowRef<string | null>(null);
+const drillDownNodeId = shallowRef<string | null>(null);
 const expandedNodeIds = shallowRef<Set<string>>(new Set([tree.value.root.id]));
+
+const visibleNodes = computed(() =>
+  getVisibleNodes(tree.value.root, (id) => expandedNodeIds.value.has(id)),
+);
+
+let visibleNodesOverride: TreeNode[] | null = null;
 
 let history = new History();
 const historyVersion = shallowRef(0);
@@ -54,6 +65,13 @@ let isInternalChange = false;
 // Initialize history with initial state
 history.push(tree.value);
 
+function focusSelectAndDrillDown(nodeId: string | null) {
+  focusedNodeId.value = nodeId;
+  selectedNodeIds.value = nodeId ? new Set([nodeId]) : new Set<string>();
+  anchorNodeId.value = nodeId;
+  drillDownNodeId.value = nodeId;
+}
+
 // Sync external value changes
 watch(
   () => props.value,
@@ -65,7 +83,7 @@ watch(
     const newTree = fromJson(val);
     tree.value = newTree;
     expandedNodeIds.value = new Set([newTree.root.id]);
-    selectedNodeId.value = null;
+    focusSelectAndDrillDown(null);
     history = new History();
     history.push(newTree);
     historyVersion.value++;
@@ -138,7 +156,10 @@ onUnmounted(() => document.removeEventListener("keydown", handleKeyDown));
 
 const state: StudioState = {
   tree,
-  selectedNodeId,
+  focusedNodeId,
+  selectedNodeIds,
+  anchorNodeId,
+  drillDownNodeId,
   expandedNodeIds,
   schema: computed<JsonSchema | null>(() => props.schema ?? null),
   searchQuery,
@@ -152,7 +173,56 @@ const state: StudioState = {
 const actions: StudioActions = {
   setTree,
   selectNode(nodeId) {
-    selectedNodeId.value = nodeId;
+    focusedNodeId.value = nodeId;
+    selectedNodeIds.value = nodeId ? new Set([nodeId]) : new Set<string>();
+    anchorNodeId.value = nodeId;
+  },
+  selectAndDrillDown: focusSelectAndDrillDown,
+  toggleNodeSelection(nodeId) {
+    const next = new Set(selectedNodeIds.value);
+    if (next.has(nodeId)) {
+      next.delete(nodeId);
+    } else {
+      next.add(nodeId);
+    }
+    selectedNodeIds.value = next;
+    if (next.size === 0) {
+      focusedNodeId.value = null;
+      anchorNodeId.value = null;
+    } else {
+      focusedNodeId.value = nodeId;
+      anchorNodeId.value = nodeId;
+    }
+  },
+  selectNodeRange(toNodeId) {
+    const nodes = visibleNodesOverride ?? visibleNodes.value;
+    const anchor = anchorNodeId.value;
+    if (!anchor) {
+      focusedNodeId.value = toNodeId;
+      selectedNodeIds.value = new Set([toNodeId]);
+      anchorNodeId.value = toNodeId;
+      return;
+    }
+    const rangeIds = computeRangeIds(nodes, anchor, toNodeId);
+    if (!rangeIds) {
+      focusedNodeId.value = toNodeId;
+      selectedNodeIds.value = new Set([toNodeId]);
+      anchorNodeId.value = toNodeId;
+      return;
+    }
+    selectedNodeIds.value = rangeIds;
+    focusedNodeId.value = toNodeId;
+  },
+  setSelection(focusedId, newSelectedIds, newAnchorId) {
+    focusedNodeId.value = focusedId;
+    selectedNodeIds.value = newSelectedIds;
+    anchorNodeId.value = newAnchorId;
+  },
+  setVisibleNodesOverride(nodes) {
+    visibleNodesOverride = nodes;
+  },
+  drillDown(nodeId) {
+    drillDownNodeId.value = nodeId;
   },
   toggleExpand(nodeId) {
     const next = new Set(expandedNodeIds.value);
@@ -197,14 +267,14 @@ const actions: StudioActions = {
       const next = new Set(expandedNodeIds.value);
       for (const id of ancestors) next.add(id);
       expandedNodeIds.value = next;
-      selectedNodeId.value = matches[0].nodeId;
+      focusSelectAndDrillDown(matches[0].nodeId);
     }
   },
   nextSearchMatch() {
     if (searchMatches.value.length === 0) return;
     const nextIdx = (searchMatchIndex.value + 1) % searchMatches.value.length;
     searchMatchIndex.value = nextIdx;
-    selectedNodeId.value = searchMatches.value[nextIdx].nodeId;
+    focusSelectAndDrillDown(searchMatches.value[nextIdx].nodeId);
   },
   prevSearchMatch() {
     if (searchMatches.value.length === 0) return;
@@ -212,7 +282,7 @@ const actions: StudioActions = {
       (searchMatchIndex.value - 1 + searchMatches.value.length) %
       searchMatches.value.length;
     searchMatchIndex.value = prevIdx;
-    selectedNodeId.value = searchMatches.value[prevIdx].nodeId;
+    focusSelectAndDrillDown(searchMatches.value[prevIdx].nodeId);
   },
 };
 

@@ -1,9 +1,17 @@
 import { createContext, useContext } from "react";
-import type { TreeState, JsonSchema, SearchMatch } from "@visual-json/core";
+import type {
+  TreeState,
+  TreeNode,
+  JsonSchema,
+  SearchMatch,
+} from "@visual-json/core";
 
 export interface StudioState {
   tree: TreeState;
-  selectedNodeId: string | null;
+  focusedNodeId: string | null;
+  selectedNodeIds: Set<string>;
+  anchorNodeId: string | null;
+  drillDownNodeId: string | null;
   expandedNodeIds: Set<string>;
   schema: JsonSchema | null;
   searchQuery: string;
@@ -15,6 +23,16 @@ export interface StudioState {
 export interface StudioActions {
   setTree: (tree: TreeState) => void;
   selectNode: (nodeId: string | null) => void;
+  selectAndDrillDown: (nodeId: string | null) => void;
+  toggleNodeSelection: (nodeId: string) => void;
+  selectNodeRange: (toNodeId: string) => void;
+  setSelection: (
+    focusedId: string | null,
+    selectedIds: Set<string>,
+    anchorId: string | null,
+  ) => void;
+  setVisibleNodesOverride: (nodes: TreeNode[] | null) => void;
+  drillDown: (nodeId: string | null) => void;
   toggleExpand: (nodeId: string) => void;
   expandNode: (nodeId: string) => void;
   collapseNode: (nodeId: string) => void;

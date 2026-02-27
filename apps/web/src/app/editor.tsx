@@ -69,27 +69,205 @@ const samples: { name: string; filename: string; data: JsonValue }[] = [
     },
   },
   {
-    name: "tsconfig.json",
-    filename: "tsconfig.json",
+    name: "OpenAPI spec",
+    filename: "openapi.json",
     data: {
-      compilerOptions: {
-        target: "ES2020",
-        lib: ["DOM", "DOM.Iterable", "ES2020"],
-        module: "ESNext",
-        moduleResolution: "bundler",
-        jsx: "react-jsx",
-        strict: true,
-        esModuleInterop: true,
-        skipLibCheck: true,
-        forceConsistentCasingInFileNames: true,
-        resolveJsonModule: true,
-        isolatedModules: true,
-        noEmit: true,
-        baseUrl: ".",
-        paths: { "@/*": ["./*"] },
+      openapi: "3.1.0",
+      info: {
+        title: "Tasks API",
+        version: "1.0.0",
+        description: "A simple task management API",
+        contact: { name: "API Support", email: "support@example.com" },
+        license: { name: "MIT", url: "https://opensource.org/licenses/MIT" },
       },
-      include: ["src/**/*.ts", "src/**/*.tsx"],
-      exclude: ["node_modules", "dist"],
+      servers: [
+        {
+          url: "https://api.example.com/v1",
+          description: "Production",
+        },
+        {
+          url: "https://staging-api.example.com/v1",
+          description: "Staging",
+        },
+      ],
+      paths: {
+        "/tasks": {
+          get: {
+            summary: "List tasks",
+            operationId: "listTasks",
+            tags: ["tasks"],
+            parameters: [
+              {
+                name: "status",
+                in: "query",
+                required: false,
+                schema: { type: "string", enum: ["open", "closed", "all"] },
+              },
+              {
+                name: "limit",
+                in: "query",
+                required: false,
+                schema: { type: "integer", default: 20, maximum: 100 },
+              },
+            ],
+            responses: {
+              "200": {
+                description: "A list of tasks",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Task" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          post: {
+            summary: "Create a task",
+            operationId: "createTask",
+            tags: ["tasks"],
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/TaskInput" },
+                },
+              },
+            },
+            responses: {
+              "201": {
+                description: "Task created",
+                content: {
+                  "application/json": {
+                    schema: { $ref: "#/components/schemas/Task" },
+                  },
+                },
+              },
+              "422": { description: "Validation error" },
+            },
+          },
+        },
+        "/tasks/{taskId}": {
+          get: {
+            summary: "Get a task",
+            operationId: "getTask",
+            tags: ["tasks"],
+            parameters: [
+              {
+                name: "taskId",
+                in: "path",
+                required: true,
+                schema: { type: "string", format: "uuid" },
+              },
+            ],
+            responses: {
+              "200": {
+                description: "Task details",
+                content: {
+                  "application/json": {
+                    schema: { $ref: "#/components/schemas/Task" },
+                  },
+                },
+              },
+              "404": { description: "Task not found" },
+            },
+          },
+          patch: {
+            summary: "Update a task",
+            operationId: "updateTask",
+            tags: ["tasks"],
+            parameters: [
+              {
+                name: "taskId",
+                in: "path",
+                required: true,
+                schema: { type: "string", format: "uuid" },
+              },
+            ],
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: { $ref: "#/components/schemas/TaskInput" },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Task updated",
+                content: {
+                  "application/json": {
+                    schema: { $ref: "#/components/schemas/Task" },
+                  },
+                },
+              },
+            },
+          },
+          delete: {
+            summary: "Delete a task",
+            operationId: "deleteTask",
+            tags: ["tasks"],
+            parameters: [
+              {
+                name: "taskId",
+                in: "path",
+                required: true,
+                schema: { type: "string", format: "uuid" },
+              },
+            ],
+            responses: {
+              "204": { description: "Task deleted" },
+            },
+          },
+        },
+      },
+      components: {
+        schemas: {
+          Task: {
+            type: "object",
+            required: ["id", "title", "status", "createdAt"],
+            properties: {
+              id: { type: "string", format: "uuid" },
+              title: { type: "string", example: "Write docs" },
+              description: { type: "string", nullable: true },
+              status: {
+                type: "string",
+                enum: ["open", "in_progress", "closed"],
+              },
+              priority: { type: "string", enum: ["low", "medium", "high"] },
+              assignee: { type: "string", nullable: true },
+              tags: { type: "array", items: { type: "string" } },
+              createdAt: { type: "string", format: "date-time" },
+              updatedAt: { type: "string", format: "date-time" },
+            },
+          },
+          TaskInput: {
+            type: "object",
+            required: ["title"],
+            properties: {
+              title: { type: "string", minLength: 1, maxLength: 200 },
+              description: { type: "string", nullable: true },
+              status: {
+                type: "string",
+                enum: ["open", "in_progress", "closed"],
+              },
+              priority: { type: "string", enum: ["low", "medium", "high"] },
+              assignee: { type: "string", nullable: true },
+              tags: { type: "array", items: { type: "string" } },
+            },
+          },
+        },
+        securitySchemes: {
+          bearerAuth: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+          },
+        },
+      },
+      security: [{ bearerAuth: [] }],
     },
   },
   {

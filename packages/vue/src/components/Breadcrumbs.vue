@@ -11,12 +11,12 @@ const { state, actions } = useStudio();
 const MAX_SUGGESTIONS = 20;
 const DROPDOWN_MAX_HEIGHT = 200;
 
-const selectedNode = computed(() =>
-  state.selectedNodeId.value
-    ? state.tree.value.nodesById.get(state.selectedNodeId.value)
+const drillDownNode = computed(() =>
+  state.drillDownNodeId.value
+    ? state.tree.value.nodesById.get(state.drillDownNodeId.value)
     : null,
 );
-const currentPath = computed(() => selectedNode.value?.path ?? "/");
+const currentPath = computed(() => drillDownNode.value?.path ?? "/");
 
 const inputValue = shallowRef(currentPath.value);
 const open = shallowRef(false);
@@ -60,7 +60,7 @@ watch(
 function navigateTo(path: string) {
   for (const [id, node] of state.tree.value.nodesById) {
     if (node.path === path) {
-      actions.selectNode(id);
+      actions.selectAndDrillDown(id);
       break;
     }
   }

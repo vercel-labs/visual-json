@@ -15,10 +15,12 @@ import {
   type JsonValue,
   type JsonSchema,
   type TreeState,
+  type TreeNode,
   type SearchMatch,
 } from "@visual-json/core";
-import { collectAllIds } from "@visual-json/ui-shared";
+import { collectAllIds, getVisibleNodes } from "@visual-json/ui-shared";
 import { StudioContext, type StudioState, type StudioActions } from "./context";
+import { computeRangeIds } from "./selection-utils";
 
 export interface VisualJsonProps {
   value: JsonValue;
@@ -34,10 +36,47 @@ export function VisualJson({
   children,
 }: VisualJsonProps) {
   const [tree, setTreeState] = useState<TreeState>(() => fromJson(value));
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [focusedNodeId, setFocusedNodeId] = useState<string | null>(null);
+  const [selectedNodeIds, setSelectedNodeIdsState] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
+  const selectedNodeIdsRef = useRef<Set<string>>(new Set());
+  const setSelectedNodeIds = useCallback((ids: Set<string>) => {
+    selectedNodeIdsRef.current = ids;
+    setSelectedNodeIdsState(ids);
+  }, []);
+  const anchorNodeIdRef = useRef<string | null>(null);
+  const [anchorNodeId, setAnchorNodeIdState] = useState<string | null>(null);
+  const [drillDownNodeId, setDrillDownNodeId] = useState<string | null>(null);
   const [expandedNodeIds, setExpandedNodeIds] = useState<Set<string>>(
     () => new Set([tree.root.id]),
   );
+
+  const setAnchorNodeId = useCallback((id: string | null) => {
+    anchorNodeIdRef.current = id;
+    setAnchorNodeIdState(id);
+  }, []);
+
+  const focusSelectAndDrillDown = useCallback(
+    (nodeId: string | null) => {
+      setFocusedNodeId(nodeId);
+      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
+      setAnchorNodeId(nodeId);
+      setDrillDownNodeId(nodeId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
+  const visibleNodes = useMemo(
+    () => getVisibleNodes(tree.root, (id) => expandedNodeIds.has(id)),
+    [tree.root, expandedNodeIds],
+  );
+
+  const visibleNodesOverrideRef = useRef<TreeNode[] | null>(null);
+
+  const setVisibleNodesOverride = useCallback((nodes: TreeNode[] | null) => {
+    visibleNodesOverrideRef.current = nodes;
+  }, []);
 
   const historyRef = useRef<History>(new History());
   const isInternalChange = useRef(false);
@@ -70,7 +109,7 @@ export function VisualJson({
     const newTree = fromJson(value);
     setTreeState(newTree);
     setExpandedNodeIds(new Set([newTree.root.id]));
-    setSelectedNodeId(null);
+    focusSelectAndDrillDown(null);
     historyRef.current = new History();
     historyRef.current.push(newTree);
     setCanUndo(false);
@@ -134,8 +173,75 @@ export function VisualJson({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
 
-  const selectNode = useCallback((nodeId: string | null) => {
-    setSelectedNodeId(nodeId);
+  const selectNode = useCallback(
+    (nodeId: string | null) => {
+      setFocusedNodeId(nodeId);
+      setSelectedNodeIds(nodeId ? new Set([nodeId]) : new Set<string>());
+      setAnchorNodeId(nodeId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
+  const selectAndDrillDown = focusSelectAndDrillDown;
+
+  const toggleNodeSelection = useCallback(
+    (nodeId: string) => {
+      const next = new Set(selectedNodeIdsRef.current);
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+      setSelectedNodeIds(next);
+      if (next.size === 0) {
+        setFocusedNodeId(null);
+        setAnchorNodeId(null);
+      } else {
+        setFocusedNodeId(nodeId);
+        setAnchorNodeId(nodeId);
+      }
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
+  const selectNodeRange = useCallback(
+    (toNodeId: string) => {
+      const nodes = visibleNodesOverrideRef.current ?? visibleNodes;
+      const anchor = anchorNodeIdRef.current;
+      if (!anchor) {
+        setFocusedNodeId(toNodeId);
+        setSelectedNodeIds(new Set([toNodeId]));
+        setAnchorNodeId(toNodeId);
+        return;
+      }
+      const rangeIds = computeRangeIds(nodes, anchor, toNodeId);
+      if (!rangeIds) {
+        setFocusedNodeId(toNodeId);
+        setSelectedNodeIds(new Set([toNodeId]));
+        setAnchorNodeId(toNodeId);
+        return;
+      }
+      setSelectedNodeIds(rangeIds);
+      setFocusedNodeId(toNodeId);
+    },
+    [visibleNodes, setSelectedNodeIds, setAnchorNodeId],
+  );
+
+  const setSelection = useCallback(
+    (
+      focusedId: string | null,
+      newSelectedIds: Set<string>,
+      newAnchorId: string | null,
+    ) => {
+      setFocusedNodeId(focusedId);
+      setSelectedNodeIds(newSelectedIds);
+      setAnchorNodeId(newAnchorId);
+    },
+    [setSelectedNodeIds, setAnchorNodeId],
+  );
+
+  const drillDown = useCallback((nodeId: string | null) => {
+    setDrillDownNodeId(nodeId);
   }, []);
 
   const toggleExpand = useCallback((nodeId: string) => {
@@ -188,6 +294,7 @@ export function VisualJson({
       setSearchMatchNodeIds(matchIds);
 
       if (matches.length > 0) {
+        const firstId = matches[0].nodeId;
         const ancestors = getAncestorIds(
           tree,
           matches.map((m) => m.nodeId),
@@ -197,7 +304,7 @@ export function VisualJson({
           for (const id of ancestors) next.add(id);
           return next;
         });
-        setSelectedNodeId(matches[0].nodeId);
+        focusSelectAndDrillDown(firstId);
       }
     },
     [tree],
@@ -207,16 +314,16 @@ export function VisualJson({
     if (searchMatches.length === 0) return;
     const nextIdx = (searchMatchIndex + 1) % searchMatches.length;
     setSearchMatchIndex(nextIdx);
-    setSelectedNodeId(searchMatches[nextIdx].nodeId);
-  }, [searchMatches, searchMatchIndex]);
+    focusSelectAndDrillDown(searchMatches[nextIdx].nodeId);
+  }, [searchMatches, searchMatchIndex, focusSelectAndDrillDown]);
 
   const prevSearchMatch = useCallback(() => {
     if (searchMatches.length === 0) return;
     const prevIdx =
       (searchMatchIndex - 1 + searchMatches.length) % searchMatches.length;
     setSearchMatchIndex(prevIdx);
-    setSelectedNodeId(searchMatches[prevIdx].nodeId);
-  }, [searchMatches, searchMatchIndex]);
+    focusSelectAndDrillDown(searchMatches[prevIdx].nodeId);
+  }, [searchMatches, searchMatchIndex, focusSelectAndDrillDown]);
 
   useEffect(() => {
     if (!searchQuery.trim()) return;
@@ -231,7 +338,10 @@ export function VisualJson({
   const state: StudioState = useMemo(
     () => ({
       tree,
-      selectedNodeId,
+      focusedNodeId,
+      selectedNodeIds,
+      anchorNodeId,
+      drillDownNodeId,
       expandedNodeIds,
       schema: schema ?? null,
       searchQuery,
@@ -241,7 +351,10 @@ export function VisualJson({
     }),
     [
       tree,
-      selectedNodeId,
+      focusedNodeId,
+      selectedNodeIds,
+      anchorNodeId,
+      drillDownNodeId,
       expandedNodeIds,
       schema,
       searchQuery,
@@ -255,6 +368,12 @@ export function VisualJson({
     () => ({
       setTree,
       selectNode,
+      selectAndDrillDown,
+      toggleNodeSelection,
+      selectNodeRange,
+      setSelection,
+      setVisibleNodesOverride,
+      drillDown,
       toggleExpand,
       expandNode,
       collapseNode,
@@ -271,6 +390,12 @@ export function VisualJson({
     [
       setTree,
       selectNode,
+      selectAndDrillDown,
+      toggleNodeSelection,
+      selectNodeRange,
+      setSelection,
+      setVisibleNodesOverride,
+      drillDown,
       toggleExpand,
       expandNode,
       collapseNode,

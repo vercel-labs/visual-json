@@ -4,23 +4,22 @@ import {
   setKey,
   addProperty,
   removeNode,
+  getPropertySchema,
+  resolveRef,
   type TreeNode,
   type JsonSchemaProperty,
   type JsonSchema,
 } from "@visual-json/core";
-import {
-  getDisplayKey,
-  getVisibleNodes,
-  getResolvedSchema,
-  getValueColor,
-  getDisplayValue,
-  checkRequired,
-  parseInputValue,
-} from "@visual-json/ui-shared";
 import { useStudio } from "./context";
 import { Breadcrumbs } from "./breadcrumbs";
 import { EnumInput } from "./enum-input";
-import { useDragDrop, type DragState } from "./use-drag-drop";
+import { getDisplayKey, getVisibleNodes } from "@visual-json/ui-shared";
+import { deleteSelectedNodes, computeSelectAllIds } from "./selection-utils";
+import {
+  useDragDrop,
+  setMultiDragImage,
+  type DragState,
+} from "./use-drag-drop";
 
 interface FormFieldProps {
   node: TreeNode;
@@ -29,20 +28,44 @@ interface FormFieldProps {
   depth: number;
   showDescriptions: boolean;
   showCounts: boolean;
-  formSelectedNodeId: string | null;
   editingNodeId: string | null;
   collapsedIds: Set<string>;
   maxKeyLength: number;
   maxDepth: number;
   isFocused: boolean;
   dragState: DragState;
-  onSelect: (nodeId: string) => void;
+  onSelect: (nodeId: string, e: React.MouseEvent) => void;
   onToggleCollapse: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDragStart: (nodeId: string) => void;
   onDragOver: (nodeId: string, position: "before" | "after") => void;
   onDragEnd: () => void;
   onDrop: () => void;
+}
+
+function getResolvedSchema(
+  schema: JsonSchema | null,
+  rootSchema: JsonSchemaProperty | undefined,
+  path: string,
+): JsonSchemaProperty | undefined {
+  if (!schema) return undefined;
+  const raw = getPropertySchema(schema, path, rootSchema);
+  if (!raw) return undefined;
+  return resolveRef(raw, rootSchema ?? schema);
+}
+
+function getValueColor(node: TreeNode): string {
+  if (node.type === "boolean" || node.type === "null")
+    return "var(--vj-boolean, #569cd6)";
+  if (node.type === "number") return "var(--vj-number, #b5cea8)";
+  return "var(--vj-string, #ce9178)";
+}
+
+function getDisplayValue(node: TreeNode): string {
+  if (node.type === "null") return "null";
+  if (node.type === "boolean") return String(node.value);
+  if (node.value === null || node.value === undefined) return "";
+  return String(node.value);
 }
 
 function FormField({
@@ -52,7 +75,6 @@ function FormField({
   depth,
   showDescriptions,
   showCounts,
-  formSelectedNodeId,
   editingNodeId,
   collapsedIds,
   maxKeyLength,
@@ -70,7 +92,7 @@ function FormField({
   const { state, actions } = useStudio();
   const isContainer = node.type === "object" || node.type === "array";
   const collapsed = collapsedIds.has(node.id);
-  const isSelected = formSelectedNodeId === node.id;
+  const isSelected = state.selectedNodeIds.has(node.id);
   const isEditing = editingNodeId === node.id;
   const propSchema = getResolvedSchema(schema, rootSchema, node.path);
   const isRequired = checkRequired(node, schema, rootSchema);
@@ -78,7 +100,7 @@ function FormField({
 
   const isRoot = node.parentId === null;
   const isDragTarget = dragState.dropTargetNodeId === node.id;
-  const isDraggedNode = dragState.draggedNodeId === node.id;
+  const isDraggedNode = dragState.draggedNodeIds.has(node.id);
 
   function handleDragOverEvent(e: React.DragEvent) {
     e.preventDefault();
@@ -87,12 +109,12 @@ function FormField({
     onDragOver(node.id, e.clientY < midY ? "before" : "after");
   }
 
-  let borderTop = "none";
-  let borderBottom = "none";
+  let borderTopColor = "transparent";
+  let borderBottomColor = "transparent";
   if (isDragTarget && dragState.dropPosition === "before") {
-    borderTop = "2px solid var(--vj-accent, #007acc)";
+    borderTopColor = "var(--vj-accent, #007acc)";
   } else if (isDragTarget && dragState.dropPosition === "after") {
-    borderBottom = "2px solid var(--vj-accent, #007acc)";
+    borderBottomColor = "var(--vj-accent, #007acc)";
   }
 
   const valueRef = useRef<HTMLInputElement | HTMLSelectElement>(null);
@@ -115,7 +137,25 @@ function FormField({
 
   const handleValueChange = useCallback(
     (newValue: string) => {
-      const parsed = parseInputValue(newValue, propSchema?.type, node.type);
+      let parsed: string | number | boolean | null;
+      if (
+        propSchema?.type === "boolean" ||
+        newValue === "true" ||
+        newValue === "false"
+      ) {
+        parsed = newValue === "true";
+      } else if (newValue === "null") {
+        parsed = null;
+      } else if (
+        propSchema?.type === "number" ||
+        propSchema?.type === "integer" ||
+        node.type === "number"
+      ) {
+        const num = Number(newValue);
+        parsed = isNaN(num) ? newValue : num;
+      } else {
+        parsed = newValue;
+      }
       const newTree = setValue(state.tree, node.id, parsed);
       actions.setTree(newTree);
     },
@@ -171,6 +211,12 @@ function FormField({
           draggable={!isRoot}
           onDragStart={(e) => {
             e.dataTransfer.effectAllowed = "move";
+            if (
+              state.selectedNodeIds.size > 1 &&
+              state.selectedNodeIds.has(node.id)
+            ) {
+              setMultiDragImage(e, state.selectedNodeIds.size);
+            }
             onDragStart(node.id);
           }}
           onDragOver={handleDragOverEvent}
@@ -183,20 +229,21 @@ function FormField({
             display: "flex",
             alignItems: "center",
             gap: 6,
-            padding: "3px 8px",
+            padding: "1px 8px",
             paddingLeft: 8 + depth * 16,
             cursor: "pointer",
             backgroundColor: rowBg,
             color: rowColor,
             height: 28,
+            boxSizing: "border-box",
             userSelect: "none",
             opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-            borderTop,
-            borderBottom,
+            borderTop: `2px solid ${borderTopColor}`,
+            borderBottom: `2px solid ${borderBottomColor}`,
           }}
           onClick={(e) => {
             e.stopPropagation();
-            onSelect(node.id);
+            onSelect(node.id, e);
           }}
           onDoubleClick={() => onToggleCollapse(node.id)}
           onMouseEnter={() => setHovered(true)}
@@ -352,7 +399,6 @@ function FormField({
                 depth={depth + 1}
                 showDescriptions={showDescriptions}
                 showCounts={showCounts}
-                formSelectedNodeId={formSelectedNodeId}
                 editingNodeId={editingNodeId}
                 collapsedIds={collapsedIds}
                 maxKeyLength={maxKeyLength}
@@ -383,6 +429,12 @@ function FormField({
       draggable={!isRoot}
       onDragStart={(e) => {
         e.dataTransfer.effectAllowed = "move";
+        if (
+          state.selectedNodeIds.size > 1 &&
+          state.selectedNodeIds.has(node.id)
+        ) {
+          setMultiDragImage(e, state.selectedNodeIds.size);
+        }
         onDragStart(node.id);
       }}
       onDragOver={handleDragOverEvent}
@@ -395,20 +447,21 @@ function FormField({
         display: "flex",
         alignItems: "center",
         gap: 6,
-        padding: "3px 8px",
+        padding: "1px 8px",
         paddingLeft: 8 + depth * 16,
         cursor: "pointer",
         backgroundColor: rowBg,
         color: rowColor,
         height: 28,
+        boxSizing: "border-box",
         userSelect: "none",
         opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-        borderTop,
-        borderBottom,
+        borderTop: `2px solid ${borderTopColor}`,
+        borderBottom: `2px solid ${borderBottomColor}`,
       }}
       onClick={(e) => {
         e.stopPropagation();
-        onSelect(node.id);
+        onSelect(node.id, e);
       }}
       onDoubleClick={() => onStartEditing(node.id)}
       onMouseEnter={() => setHovered(true)}
@@ -603,6 +656,17 @@ function renderEditInput(
   );
 }
 
+function checkRequired(
+  node: TreeNode,
+  schema: JsonSchema | null,
+  rootSchema: JsonSchemaProperty | undefined,
+): boolean {
+  if (!schema || !node.parentId) return false;
+  const parentPath = node.path.split("/").slice(0, -1).join("/") || "/";
+  const parentSchema = getResolvedSchema(schema, rootSchema, parentPath);
+  return parentSchema?.required?.includes(node.key) ?? false;
+}
+
 export interface FormViewProps {
   className?: string;
   showDescriptions?: boolean;
@@ -616,14 +680,11 @@ export function FormView({
 }: FormViewProps) {
   const { state, actions } = useStudio();
   const rootSchema = state.schema ?? undefined;
-  const selectedNode = state.selectedNodeId
-    ? state.tree.nodesById.get(state.selectedNodeId)
+  const drillDownNode = state.drillDownNodeId
+    ? state.tree.nodesById.get(state.drillDownNodeId)
     : null;
-  const displayNode = selectedNode ?? state.tree.root;
+  const displayNode = drillDownNode ?? state.tree.root;
 
-  const [formSelectedNodeId, setFormSelectedNodeId] = useState<string | null>(
-    null,
-  );
   const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const preEditTreeRef = useRef<typeof state.tree | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(
@@ -631,16 +692,8 @@ export function FormView({
   );
   const containerRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
-  const {
-    dragState,
-    handleDragStart,
-    handleDragOver,
-    handleDragEnd,
-    handleDrop,
-  } = useDragDrop();
 
   useEffect(() => {
-    setFormSelectedNodeId(null);
     setEditingNodeId(null);
     setCollapsedIds(new Set<string>());
   }, [displayNode.id]);
@@ -649,6 +702,19 @@ export function FormView({
     () => getVisibleNodes(displayNode, (id) => !collapsedIds.has(id)),
     [displayNode, collapsedIds],
   );
+
+  const {
+    dragState,
+    handleDragStart,
+    handleDragOver,
+    handleDragEnd,
+    handleDrop,
+  } = useDragDrop(visibleNodes, state.selectedNodeIds);
+
+  useEffect(() => {
+    actions.setVisibleNodesOverride(visibleNodes);
+    return () => actions.setVisibleNodesOverride(null);
+  }, [visibleNodes, actions]);
 
   const { maxKeyLength, maxDepth } = useMemo(() => {
     let maxKey = 1;
@@ -669,10 +735,20 @@ export function FormView({
     return { maxKeyLength: maxKey, maxDepth: maxD };
   }, [visibleNodes, displayNode.path, state.tree]);
 
-  const handleSelect = useCallback((nodeId: string) => {
-    setFormSelectedNodeId(nodeId);
-    setEditingNodeId(null);
-  }, []);
+  const handleSelect = useCallback(
+    (nodeId: string, e: React.MouseEvent) => {
+      setEditingNodeId(null);
+      if (e.shiftKey) {
+        actions.setVisibleNodesOverride(visibleNodes);
+        actions.selectNodeRange(nodeId);
+      } else if (e.metaKey || e.ctrlKey) {
+        actions.toggleNodeSelection(nodeId);
+      } else {
+        actions.selectNode(nodeId);
+      }
+    },
+    [actions, visibleNodes],
+  );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
     setCollapsedIds((prev) => {
@@ -725,16 +801,24 @@ export function FormView({
         return;
       }
 
-      const currentIndex = visibleNodes.findIndex(
-        (n) => n.id === formSelectedNodeId,
+      let currentIndex = visibleNodes.findIndex(
+        (n) => n.id === state.focusedNodeId,
       );
+      if (currentIndex === -1 && visibleNodes.length > 0) {
+        currentIndex = 0;
+      }
 
       switch (e.key) {
         case "ArrowDown": {
           e.preventDefault();
           const next = visibleNodes[currentIndex + 1];
           if (next) {
-            setFormSelectedNodeId(next.id);
+            if (e.shiftKey) {
+              actions.setVisibleNodesOverride(visibleNodes);
+              actions.selectNodeRange(next.id);
+            } else {
+              actions.selectNode(next.id);
+            }
             scrollToNode(next.id);
           }
           break;
@@ -743,7 +827,12 @@ export function FormView({
           e.preventDefault();
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
-            setFormSelectedNodeId(prev.id);
+            if (e.shiftKey) {
+              actions.setVisibleNodesOverride(visibleNodes);
+              actions.selectNodeRange(prev.id);
+            } else {
+              actions.selectNode(prev.id);
+            }
             scrollToNode(prev.id);
           }
           break;
@@ -759,7 +848,7 @@ export function FormView({
                 return next;
               });
             } else if (node.children.length > 0) {
-              setFormSelectedNodeId(node.children[0].id);
+              actions.selectNode(node.children[0].id);
               scrollToNode(node.children[0].id);
             }
           }
@@ -782,7 +871,7 @@ export function FormView({
               (n) => n.id === current.parentId,
             );
             if (parentInVisible) {
-              setFormSelectedNodeId(parentInVisible.id);
+              actions.selectNode(parentInVisible.id);
               scrollToNode(parentInVisible.id);
             }
           }
@@ -790,32 +879,54 @@ export function FormView({
         }
         case "Enter": {
           e.preventDefault();
-          if (formSelectedNodeId) {
+          if (state.focusedNodeId) {
             preEditTreeRef.current = state.tree;
-            setEditingNodeId(formSelectedNodeId);
+            actions.selectNode(state.focusedNodeId);
+            setEditingNodeId(state.focusedNodeId);
+          }
+          break;
+        }
+        case "a": {
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            const ids = computeSelectAllIds(
+              state.tree,
+              state.focusedNodeId,
+              state.selectedNodeIds,
+            );
+            if (ids) {
+              actions.setSelection(
+                state.focusedNodeId,
+                ids,
+                state.focusedNodeId,
+              );
+            }
           }
           break;
         }
         case "Escape": {
           e.preventDefault();
-          setEditingNodeId(null);
+          if (state.selectedNodeIds.size > 1 && state.focusedNodeId) {
+            actions.selectNode(state.focusedNodeId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
+          }
           break;
         }
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const toDelete =
-            currentIndex >= 0 ? visibleNodes[currentIndex] : null;
-          if (toDelete && toDelete.parentId) {
-            const nextSelect =
-              visibleNodes[currentIndex + 1] ?? visibleNodes[currentIndex - 1];
-            const newTree = removeNode(state.tree, toDelete.id);
-            actions.setTree(newTree);
-            if (nextSelect && nextSelect.id !== toDelete.id) {
-              setFormSelectedNodeId(nextSelect.id);
-            } else {
-              setFormSelectedNodeId(null);
-            }
+          const { newTree, nextFocusId } = deleteSelectedNodes(
+            state.tree,
+            state.selectedNodeIds,
+            visibleNodes,
+          );
+          if (newTree === state.tree) break;
+          actions.setTree(newTree);
+          if (nextFocusId) {
+            actions.selectNode(nextFocusId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
           }
           break;
         }
@@ -823,7 +934,8 @@ export function FormView({
     },
     [
       visibleNodes,
-      formSelectedNodeId,
+      state.focusedNodeId,
+      state.selectedNodeIds,
       editingNodeId,
       collapsedIds,
       scrollToNode,
@@ -880,7 +992,6 @@ export function FormView({
           depth={0}
           showDescriptions={showDescriptions}
           showCounts={showCounts}
-          formSelectedNodeId={formSelectedNodeId}
           editingNodeId={editingNodeId}
           collapsedIds={collapsedIds}
           maxKeyLength={maxKeyLength}

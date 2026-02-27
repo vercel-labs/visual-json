@@ -14,6 +14,7 @@ import {
   getDisplayValue as getDisplayValueFn,
   checkRequired as checkRequiredFn,
   parseInputValue,
+  setMultiDragImage,
 } from "@visual-json/ui-shared";
 import { useStudio } from "../composables/use-studio";
 import { FORM_VIEW_KEY } from "./form-view-context";
@@ -46,7 +47,7 @@ const isContainer = computed(
 );
 const isRoot = computed(() => props.node.parentId === null);
 const isSelected = computed(
-  () => ctx.formSelectedNodeId.value === props.node.id,
+  () => state.selectedNodeIds.value.has(props.node.id),
 );
 const isEditing = computed(() => ctx.editingNodeId.value === props.node.id);
 const collapsed = computed(() => ctx.collapsedIds.value.has(props.node.id));
@@ -75,21 +76,21 @@ const isDragTarget = computed(
   () => ctx.dragState.value.dropTargetNodeId === props.node.id,
 );
 const isDraggedNode = computed(
-  () => ctx.dragState.value.draggedNodeId === props.node.id,
+  () => ctx.dragState.value.draggedNodeIds.has(props.node.id),
 );
 
-function getBorderTop() {
+function getBorderTopColor() {
   if (isDragTarget.value && ctx.dragState.value.dropPosition === "before") {
-    return "2px solid var(--vj-accent, #007acc)";
+    return "var(--vj-accent, #007acc)";
   }
-  return "none";
+  return "transparent";
 }
 
-function getBorderBottom() {
+function getBorderBottomColor() {
   if (isDragTarget.value && ctx.dragState.value.dropPosition === "after") {
-    return "2px solid var(--vj-accent, #007acc)";
+    return "var(--vj-accent, #007acc)";
   }
-  return "none";
+  return "transparent";
 }
 
 function getRowBg() {
@@ -121,6 +122,17 @@ function handleDragOver(e: DragEvent) {
   const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
   const midY = rect.top + rect.height / 2;
   ctx.onDragOver(props.node.id, e.clientY < midY ? "before" : "after");
+}
+
+function handleDragStart(e: DragEvent) {
+  e.dataTransfer!.effectAllowed = "move";
+  if (
+    state.selectedNodeIds.value.size > 1 &&
+    state.selectedNodeIds.value.has(props.node.id)
+  ) {
+    setMultiDragImage(e.dataTransfer!, state.selectedNodeIds.value.size);
+  }
+  ctx.onDragStart(props.node.id);
 }
 
 function handleValueChange(newValue: string) {
@@ -187,27 +199,23 @@ watch(isEditing, async (editing) => {
         display: 'flex',
         alignItems: 'center',
         gap: '6px',
-        padding: '3px 8px',
+        padding: '1px 8px',
         paddingLeft: 8 + depth * 16 + 'px',
         cursor: 'pointer',
         backgroundColor: getRowBg(),
         color: getRowColor(),
         height: '28px',
+        boxSizing: 'border-box',
         userSelect: 'none',
         opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-        borderTop: getBorderTop(),
-        borderBottom: getBorderBottom(),
+        borderTop: `2px solid ${getBorderTopColor()}`,
+        borderBottom: `2px solid ${getBorderBottomColor()}`,
       }"
-      @click.stop="() => ctx.onSelect(node.id)"
+      @click.stop="(e) => ctx.onSelect(node.id, e)"
       @dblclick="() => ctx.onToggleCollapse(node.id)"
       @mouseenter="() => (hovered = true)"
       @mouseleave="() => (hovered = false)"
-      @dragstart="
-        (e) => {
-          e.dataTransfer!.effectAllowed = 'move';
-          ctx.onDragStart(node.id);
-        }
-      "
+      @dragstart="handleDragStart"
       @dragover="handleDragOver"
       @dragend="() => ctx.onDragEnd()"
       @drop.prevent="() => ctx.onDrop()"
@@ -364,27 +372,23 @@ watch(isEditing, async (editing) => {
       display: 'flex',
       alignItems: 'center',
       gap: '6px',
-      padding: '3px 8px',
+      padding: '1px 8px',
       paddingLeft: 8 + depth * 16 + 'px',
       cursor: 'pointer',
       backgroundColor: getRowBg(),
       color: getRowColor(),
       height: '28px',
+      boxSizing: 'border-box',
       userSelect: 'none',
       opacity: isDeprecated ? 0.5 : isDraggedNode ? 0.4 : 1,
-      borderTop: getBorderTop(),
-      borderBottom: getBorderBottom(),
+      borderTop: `2px solid ${getBorderTopColor()}`,
+      borderBottom: `2px solid ${getBorderBottomColor()}`,
     }"
-    @click.stop="() => ctx.onSelect(node.id)"
+    @click.stop="(e) => ctx.onSelect(node.id, e)"
     @dblclick="() => ctx.onStartEditing(node.id)"
     @mouseenter="() => (hovered = true)"
     @mouseleave="() => (hovered = false)"
-    @dragstart="
-      (e) => {
-        e.dataTransfer!.effectAllowed = 'move';
-        ctx.onDragStart(node.id);
-      }
-    "
+    @dragstart="handleDragStart"
     @dragover="handleDragOver"
     @dragend="() => ctx.onDragEnd()"
     @drop.prevent="() => ctx.onDrop()"

@@ -6,9 +6,12 @@ import {
   setValue,
   setKey,
   addProperty,
+  insertProperty,
+  insertNode,
   removeNode,
   moveNode,
   reorderChildren,
+  reorderChildrenMulti,
   changeType,
   duplicateNode,
 } from "../../src";
@@ -228,5 +231,296 @@ describe("duplicateNode", () => {
     const state = fromJson({ a: 1 });
     const next = duplicateNode(state, state.root.id);
     expect(next).toBe(state);
+  });
+});
+
+describe("insertProperty", () => {
+  it("inserts at the beginning", () => {
+    const state = fromJson({ a: 1, b: 2 });
+    const next = insertProperty(state, state.root.id, "z", 0, 0);
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "z",
+      "a",
+      "b",
+    ]);
+  });
+
+  it("inserts at a middle index", () => {
+    const state = fromJson({ a: 1, b: 2 });
+    const next = insertProperty(state, state.root.id, "mid", 99, 1);
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "mid",
+      "b",
+    ]);
+    expect((toJson(next.root) as Record<string, unknown>)["mid"]).toBe(99);
+  });
+
+  it("inserts at the end", () => {
+    const state = fromJson({ a: 1 });
+    const next = insertProperty(state, state.root.id, "b", 2, 1);
+    expect(toJson(next.root)).toEqual({ a: 1, b: 2 });
+  });
+
+  it("inserts into an array and re-indexes keys", () => {
+    const state = fromJson([10, 20, 30]);
+    const next = insertProperty(state, state.root.id, "1", 15, 1);
+    expect(toJson(next.root)).toEqual([10, 15, 20, 30]);
+    expect(next.root.children.map((c) => c.key)).toEqual(["0", "1", "2", "3"]);
+  });
+
+  it("returns state unchanged for unknown parent", () => {
+    const state = fromJson({ a: 1 });
+    const next = insertProperty(state, "nonexistent", "b", 2, 0);
+    expect(next).toBe(state);
+  });
+});
+
+describe("reorderChildrenMulti", () => {
+  it("moves multiple adjacent children after a target", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, b, , d] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, b.id],
+      d.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "c",
+      "d",
+      "a",
+      "b",
+    ]);
+  });
+
+  it("moves multiple non-adjacent children before a target", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, , c, d] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, c.id],
+      d.id,
+      "before",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("reorders within an array and re-indexes keys", () => {
+    const state = fromJson([10, 20, 30, 40]);
+    const [first, second] = state.root.children;
+    const last = state.root.children[3];
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [first.id, second.id],
+      last.id,
+      "after",
+    );
+    expect(toJson(next.root)).toEqual([30, 40, 10, 20]);
+    expect(next.root.children.map((c) => c.key)).toEqual(["0", "1", "2", "3"]);
+  });
+
+  it("returns state unchanged for unknown parent", () => {
+    const state = fromJson({ a: 1 });
+    const next = reorderChildrenMulti(
+      state,
+      "nonexistent",
+      [state.root.children[0].id],
+      state.root.children[0].id,
+      "before",
+    );
+    expect(next).toBe(state);
+  });
+
+  it("keeps order when moving [a,b] after b (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, b] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, b.id],
+      b.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("keeps order when moving [a,b] before a (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, b] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, b.id],
+      a.id,
+      "before",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("keeps order when moving [b,c] after c (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [, b, c] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [b.id, c.id],
+      c.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "a",
+      "b",
+      "c",
+      "d",
+    ]);
+  });
+
+  it("moves non-adjacent [a,c] after c (target in moved set)", () => {
+    const state = fromJson({ a: 1, b: 2, c: 3, d: 4 });
+    const [a, , c] = state.root.children;
+    const next = reorderChildrenMulti(
+      state,
+      state.root.id,
+      [a.id, c.id],
+      c.id,
+      "after",
+    );
+    expect(Object.keys(toJson(next.root) as Record<string, unknown>)).toEqual([
+      "b",
+      "a",
+      "c",
+      "d",
+    ]);
+  });
+});
+
+describe("insertNode", () => {
+  it("inserts a node while preserving its ID", () => {
+    const src = fromJson({ src: { val: 1 }, dst: {} });
+    const val = src.root.children[0].children[0];
+    const originalId = val.id;
+    const removed = removeNode(src, val.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, val, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.id).toBe(originalId);
+    expect(toJson(next.root)).toEqual({ src: {}, dst: { val: 1 } });
+  });
+
+  it("preserves descendant IDs", () => {
+    const src = fromJson({ src: { obj: { a: 1, b: 2 } }, dst: {} });
+    const obj = src.root.children[0].children[0];
+    const childA = obj.children[0];
+    const childB = obj.children[1];
+    const removed = removeNode(src, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, obj, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.id).toBe(obj.id);
+    expect(inserted.children[0].id).toBe(childA.id);
+    expect(inserted.children[1].id).toBe(childB.id);
+  });
+
+  it("updates paths after insertion", () => {
+    const src = fromJson({ src: { val: 1 }, dst: {} });
+    const val = src.root.children[0].children[0];
+    const removed = removeNode(src, val.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, val, 0);
+    const inserted = next.root.children[1].children[0];
+    expect(inserted.path).toBe("/dst/val");
+  });
+
+  it("re-indexes array keys when inserting into an array", () => {
+    const state = fromJson({ items: [10, 20, 30], extra: 99 });
+    const extra = state.root.children[1];
+    const removed = removeNode(state, extra.id);
+    const items = removed.root.children[0];
+    const next = insertNode(removed, items.id, extra, 1);
+    expect(toJson(next.root)).toEqual({ items: [10, 99, 20, 30] });
+    expect(next.root.children[0].children.map((c) => c.key)).toEqual([
+      "0",
+      "1",
+      "2",
+      "3",
+    ]);
+  });
+
+  it("returns state unchanged for unknown parent", () => {
+    const state = fromJson({ a: 1 });
+    const child = state.root.children[0];
+    const next = insertNode(state, "nonexistent", child, 0);
+    expect(next).toBe(state);
+  });
+
+  it("registers inserted nodes in nodesById", () => {
+    const src = fromJson({ src: { obj: { deep: 1 } }, dst: {} });
+    const obj = src.root.children[0].children[0];
+    const deep = obj.children[0];
+    const removed = removeNode(src, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, obj, 0);
+    expect(next.nodesById.has(obj.id)).toBe(true);
+    expect(next.nodesById.has(deep.id)).toBe(true);
+    expect(next.nodesById.get(obj.id)?.path).toBe("/dst/obj");
+    expect(next.nodesById.get(deep.id)?.path).toBe("/dst/obj/deep");
+  });
+
+  it("works correctly with structuredClone'd nodes after removal", () => {
+    const state = fromJson({ src: { a: 1, b: 2 }, dst: {} });
+    const a = state.root.children[0].children[0];
+    const b = state.root.children[0].children[1];
+    const snapshotA = structuredClone(a);
+    const snapshotB = structuredClone(b);
+
+    let tree = removeNode(state, b.id);
+    tree = removeNode(tree, a.id);
+
+    const dst = tree.root.children[1];
+    tree = insertNode(tree, dst.id, snapshotA, 0);
+    tree = insertNode(tree, dst.id, snapshotB, 1);
+
+    expect(toJson(tree.root)).toEqual({ src: {}, dst: { a: 1, b: 2 } });
+    expect(tree.nodesById.get(a.id)?.path).toBe("/dst/a");
+    expect(tree.nodesById.get(b.id)?.path).toBe("/dst/b");
+  });
+
+  it("cross-parent multi-move preserves IDs with structuredClone", () => {
+    const state = fromJson({ src: { obj: { x: 1 } }, dst: { existing: 0 } });
+    const obj = state.root.children[0].children[0];
+    const x = obj.children[0];
+    const snapshot = structuredClone(obj);
+
+    const removed = removeNode(state, obj.id);
+    const dst = removed.root.children[1];
+    const next = insertNode(removed, dst.id, snapshot, 1);
+
+    expect(next.nodesById.has(obj.id)).toBe(true);
+    expect(next.nodesById.has(x.id)).toBe(true);
+    expect(next.nodesById.get(obj.id)?.path).toBe("/dst/obj");
+    expect(next.nodesById.get(x.id)?.path).toBe("/dst/obj/x");
+    expect(toJson(next.root)).toEqual({
+      src: {},
+      dst: { existing: 0, obj: { x: 1 } },
+    });
   });
 });

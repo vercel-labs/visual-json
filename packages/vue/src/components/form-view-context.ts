@@ -7,14 +7,13 @@ export interface FormViewContext {
   rootSchema: ComputedRef<JsonSchemaProperty | undefined>;
   showDescriptions: boolean;
   showCounts: boolean;
-  formSelectedNodeId: Ref<string | null>;
   editingNodeId: Ref<string | null>;
   collapsedIds: Ref<Set<string>>;
   maxKeyLength: ComputedRef<number>;
   maxDepth: ComputedRef<number>;
   isFocused: Ref<boolean>;
   dragState: Ref<DragState>;
-  onSelect: (nodeId: string) => void;
+  onSelect: (nodeId: string, e: MouseEvent) => void;
   onToggleCollapse: (nodeId: string) => void;
   onStartEditing: (nodeId: string) => void;
   onDragStart: (nodeId: string) => void;

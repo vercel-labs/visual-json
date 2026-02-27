@@ -147,7 +147,10 @@ function MyComponent() {
   </thead>
   <tbody>
     <tr><td><code>tree</code></td><td><code>TreeState</code></td><td>Current tree state</td></tr>
-    <tr><td><code>selectedNodeId</code></td><td><code>string | null</code></td><td>Currently selected node</td></tr>
+    <tr><td><code>focusedNodeId</code></td><td><code>string | null</code></td><td>Node with keyboard focus</td></tr>
+    <tr><td><code>selectedNodeIds</code></td><td><code>Set&lt;string&gt;</code></td><td>Set of selected node IDs</td></tr>
+    <tr><td><code>anchorNodeId</code></td><td><code>string | null</code></td><td>Anchor node for range selection</td></tr>
+    <tr><td><code>drillDownNodeId</code></td><td><code>string | null</code></td><td>Node shown as root in the form view</td></tr>
     <tr><td><code>expandedNodeIds</code></td><td><code>Set&lt;string&gt;</code></td><td>Set of expanded node IDs</td></tr>
     <tr><td><code>schema</code></td><td><code>JsonSchema | null</code></td><td>Active JSON Schema</td></tr>
     <tr><td><code>searchQuery</code></td><td><code>string</code></td><td>Current search query</td></tr>
@@ -165,7 +168,12 @@ function MyComponent() {
   </thead>
   <tbody>
     <tr><td><code>setTree(state)</code></td><td>Replace the tree state</td></tr>
-    <tr><td><code>selectNode(id)</code></td><td>Select a node</td></tr>
+    <tr><td><code>selectNode(id)</code></td><td>Select a single node (clears multi-selection)</td></tr>
+    <tr><td><code>toggleNodeSelection(id)</code></td><td>Toggle a node in the selection set</td></tr>
+    <tr><td><code>selectNodeRange(id)</code></td><td>Extend selection from anchor to the given node</td></tr>
+    <tr><td><code>setSelection(focusedId, selectedIds, anchorId)</code></td><td>Set focus, selection, and anchor in one call</td></tr>
+    <tr><td><code>setVisibleNodesOverride(nodes)</code></td><td>Override visible nodes used for range selection (set <code>null</code> to clear)</td></tr>
+    <tr><td><code>drillDown(id)</code></td><td>Set the form view display root</td></tr>
     <tr><td><code>toggleExpand(id)</code></td><td>Toggle node expansion</td></tr>
     <tr><td><code>expandNode(id)</code></td><td>Expand a node</td></tr>
     <tr><td><code>collapseNode(id)</code></td><td>Collapse a node</td></tr>

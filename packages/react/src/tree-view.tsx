@@ -9,7 +9,12 @@ import {
 import { useStudio } from "./context";
 import { ContextMenu, type ContextMenuEntry } from "./context-menu";
 import { getDisplayKey, getVisibleNodes } from "@visual-json/ui-shared";
-import { useDragDrop, type DragState } from "./use-drag-drop";
+import { deleteSelectedNodes, computeSelectAllIds } from "./selection-utils";
+import {
+  useDragDrop,
+  setMultiDragImage,
+  type DragState,
+} from "./use-drag-drop";
 
 interface TreeNodeRowProps {
   node: TreeNode;
@@ -18,6 +23,7 @@ interface TreeNodeRowProps {
   showValues: boolean;
   showCounts: boolean;
   isFocused: boolean;
+  onSelectRange: (nodeId: string) => void;
   onDragStart: (nodeId: string) => void;
   onDragOver: (nodeId: string, position: "before" | "after") => void;
   onDragEnd: () => void;
@@ -32,6 +38,7 @@ function TreeNodeRow({
   showValues,
   showCounts,
   isFocused,
+  onSelectRange,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -39,7 +46,7 @@ function TreeNodeRow({
   onContextMenu,
 }: TreeNodeRowProps) {
   const { state, actions } = useStudio();
-  const isSelected = state.selectedNodeId === node.id;
+  const isSelected = state.selectedNodeIds.has(node.id);
   const isExpanded = state.expandedNodeIds.has(node.id);
   const isContainer = node.type === "object" || node.type === "array";
   const [hovered, setHovered] = useState(false);
@@ -50,7 +57,7 @@ function TreeNodeRow({
     state.searchMatches[state.searchMatchIndex]?.nodeId === node.id;
 
   const isDragTarget = dragState.dropTargetNodeId === node.id;
-  const isDraggedNode = dragState.draggedNodeId === node.id;
+  const isDraggedNode = dragState.draggedNodeIds.has(node.id);
 
   function displayValue(): string {
     if (isContainer) {
@@ -71,12 +78,12 @@ function TreeNodeRow({
     onDragOver(node.id, position);
   }
 
-  let borderTop = "none";
-  let borderBottom = "none";
+  let borderTopColor = "transparent";
+  let borderBottomColor = "transparent";
   if (isDragTarget && dragState.dropPosition === "before") {
-    borderTop = "2px solid var(--vj-accent, #007acc)";
+    borderTopColor = "var(--vj-accent, #007acc)";
   } else if (isDragTarget && dragState.dropPosition === "after") {
-    borderBottom = "2px solid var(--vj-accent, #007acc)";
+    borderBottomColor = "var(--vj-accent, #007acc)";
   }
 
   return (
@@ -85,13 +92,27 @@ function TreeNodeRow({
         role="treeitem"
         aria-selected={isSelected}
         aria-expanded={isContainer ? isExpanded : undefined}
-        onClick={() => actions.selectNode(node.id)}
+        onClick={(e) => {
+          if (e.shiftKey) {
+            onSelectRange(node.id);
+          } else if (e.metaKey || e.ctrlKey) {
+            actions.toggleNodeSelection(node.id);
+          } else {
+            actions.selectAndDrillDown(node.id);
+          }
+        }}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
         onContextMenu={(e) => onContextMenu(e, node)}
         draggable={!isRoot}
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = "move";
+          if (
+            state.selectedNodeIds.size > 1 &&
+            state.selectedNodeIds.has(node.id)
+          ) {
+            setMultiDragImage(e, state.selectedNodeIds.size);
+          }
           onDragStart(node.id);
         }}
         onDragOver={handleDragOverEvent}
@@ -105,7 +126,7 @@ function TreeNodeRow({
           display: "flex",
           alignItems: "center",
           gap: 6,
-          padding: "3px 8px",
+          padding: "1px 8px",
           paddingLeft: 8 + depth * 16,
           cursor: "pointer",
           backgroundColor: isSelected
@@ -122,8 +143,9 @@ function TreeNodeRow({
           minHeight: 28,
           userSelect: "none",
           opacity: isDraggedNode ? 0.4 : 1,
-          borderTop,
-          borderBottom,
+          borderTop: `2px solid ${borderTopColor}`,
+          borderBottom: `2px solid ${borderBottomColor}`,
+          boxSizing: "border-box",
           color:
             isSelected && isFocused
               ? "var(--vj-text-selected, var(--vj-text, #cccccc))"
@@ -211,6 +233,7 @@ function TreeNodeRow({
             showValues={showValues}
             showCounts={showCounts}
             isFocused={isFocused}
+            onSelectRange={onSelectRange}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
@@ -236,13 +259,27 @@ export function TreeView({
   const { state, actions } = useStudio();
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const visibleNodes = useMemo(
+    () =>
+      getVisibleNodes(state.tree.root, (id) => state.expandedNodeIds.has(id)),
+    [state.tree.root, state.expandedNodeIds],
+  );
+
   const {
     dragState,
     handleDragStart,
     handleDragOver,
     handleDragEnd,
     handleDrop,
-  } = useDragDrop();
+  } = useDragDrop(visibleNodes, state.selectedNodeIds);
+
+  const handleSelectRange = useCallback(
+    (nodeId: string) => {
+      actions.setVisibleNodesOverride(visibleNodes);
+      actions.selectNodeRange(nodeId);
+    },
+    [visibleNodes, actions],
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -250,19 +287,15 @@ export function TreeView({
     node: TreeNode;
   } | null>(null);
 
-  const visibleNodes = useMemo(
-    () =>
-      getVisibleNodes(state.tree.root, (id) => state.expandedNodeIds.has(id)),
-    [state.tree.root, state.expandedNodeIds],
-  );
-
   const handleContextMenu = useCallback(
     (e: React.MouseEvent, node: TreeNode) => {
       e.preventDefault();
-      actions.selectNode(node.id);
+      if (!state.selectedNodeIds.has(node.id)) {
+        actions.selectAndDrillDown(node.id);
+      }
       setContextMenu({ x: e.clientX, y: e.clientY, node });
     },
-    [actions],
+    [actions, state.selectedNodeIds],
   );
 
   const buildContextMenuItems = useCallback(
@@ -364,20 +397,32 @@ export function TreeView({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       const currentIndex = visibleNodes.findIndex(
-        (n) => n.id === state.selectedNodeId,
+        (n) => n.id === state.focusedNodeId,
       );
 
       switch (e.key) {
         case "ArrowDown": {
           e.preventDefault();
           const next = visibleNodes[currentIndex + 1];
-          if (next) actions.selectNode(next.id);
+          if (next) {
+            if (e.shiftKey) {
+              handleSelectRange(next.id);
+            } else {
+              actions.selectNode(next.id);
+            }
+          }
           break;
         }
         case "ArrowUp": {
           e.preventDefault();
           const prev = visibleNodes[currentIndex - 1];
-          if (prev) actions.selectNode(prev.id);
+          if (prev) {
+            if (e.shiftKey) {
+              handleSelectRange(prev.id);
+            } else {
+              actions.selectNode(prev.id);
+            }
+          }
           break;
         }
         case "ArrowRight": {
@@ -405,19 +450,47 @@ export function TreeView({
           }
           break;
         }
+        case "a": {
+          if (e.metaKey || e.ctrlKey) {
+            e.preventDefault();
+            const ids = computeSelectAllIds(
+              state.tree,
+              state.focusedNodeId,
+              state.selectedNodeIds,
+            );
+            if (ids) {
+              actions.setSelection(
+                state.focusedNodeId,
+                ids,
+                state.focusedNodeId,
+              );
+            }
+          }
+          break;
+        }
+        case "Escape": {
+          e.preventDefault();
+          if (state.selectedNodeIds.size > 1 && state.focusedNodeId) {
+            actions.selectNode(state.focusedNodeId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
+          }
+          break;
+        }
         case "Delete":
         case "Backspace": {
           e.preventDefault();
-          const toDelete =
-            currentIndex >= 0 ? visibleNodes[currentIndex] : null;
-          if (toDelete && toDelete.parentId) {
-            const nextSelect =
-              visibleNodes[currentIndex + 1] ?? visibleNodes[currentIndex - 1];
-            const newTree = removeNode(state.tree, toDelete.id);
-            actions.setTree(newTree);
-            if (nextSelect && nextSelect.id !== toDelete.id) {
-              actions.selectNode(nextSelect.id);
-            }
+          const { newTree, nextFocusId } = deleteSelectedNodes(
+            state.tree,
+            state.selectedNodeIds,
+            visibleNodes,
+          );
+          if (newTree === state.tree) break;
+          actions.setTree(newTree);
+          if (nextFocusId) {
+            actions.selectNode(nextFocusId);
+          } else {
+            actions.setSelection(null, new Set<string>(), null);
           }
           break;
         }
@@ -425,25 +498,27 @@ export function TreeView({
     },
     [
       visibleNodes,
-      state.selectedNodeId,
+      state.focusedNodeId,
+      state.selectedNodeIds,
       state.expandedNodeIds,
       state.tree,
       actions,
+      handleSelectRange,
     ],
   );
 
   const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
-    if (state.selectedNodeId && containerRef.current) {
+    if (state.focusedNodeId && containerRef.current) {
       const el = containerRef.current.querySelector(
-        `[data-node-id="${state.selectedNodeId}"]`,
+        `[data-node-id="${state.focusedNodeId}"]`,
       );
       if (el) {
         el.scrollIntoView({ block: "nearest" });
       }
     }
-  }, [state.selectedNodeId]);
+  }, [state.focusedNodeId]);
 
   return (
     <>
@@ -472,6 +547,7 @@ export function TreeView({
           showValues={showValues}
           showCounts={showCounts}
           isFocused={isFocused}
+          onSelectRange={handleSelectRange}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
