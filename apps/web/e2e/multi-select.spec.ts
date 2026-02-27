@@ -502,6 +502,7 @@ test.describe("multi-select: Escape clears selection", () => {
     expect(await hasBgColor(formRow(page, "version"))).toBe(true);
 
     await page.locator(formSelector).press("Escape");
+    await page.mouse.move(0, 0);
 
     expect(await hasBgColor(formRow(page, "name"))).toBe(false);
     expect(await hasBgColor(formRow(page, "version"))).toBe(false);

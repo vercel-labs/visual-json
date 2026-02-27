@@ -740,6 +740,7 @@ export function FormView({
     (nodeId: string, e: React.MouseEvent) => {
       setEditingNodeId(null);
       if (e.shiftKey) {
+        actions.setVisibleNodesOverride(visibleNodes);
         actions.selectNodeRange(nodeId);
       } else if (e.metaKey || e.ctrlKey) {
         actions.toggleNodeSelection(nodeId);
@@ -747,7 +748,7 @@ export function FormView({
         actions.selectNode(nodeId);
       }
     },
-    [actions],
+    [actions, visibleNodes],
   );
 
   const handleToggleCollapse = useCallback((nodeId: string) => {
@@ -814,6 +815,7 @@ export function FormView({
           const next = visibleNodes[currentIndex + 1];
           if (next) {
             if (e.shiftKey) {
+              actions.setVisibleNodesOverride(visibleNodes);
               actions.selectNodeRange(next.id);
             } else {
               actions.selectNode(next.id);
@@ -827,6 +829,7 @@ export function FormView({
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
             if (e.shiftKey) {
+              actions.setVisibleNodesOverride(visibleNodes);
               actions.selectNodeRange(prev.id);
             } else {
               actions.selectNode(prev.id);

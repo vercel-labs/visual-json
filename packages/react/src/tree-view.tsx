@@ -24,6 +24,7 @@ interface TreeNodeRowProps {
   showValues: boolean;
   showCounts: boolean;
   isFocused: boolean;
+  onSelectRange: (nodeId: string) => void;
   onDragStart: (nodeId: string) => void;
   onDragOver: (nodeId: string, position: "before" | "after") => void;
   onDragEnd: () => void;
@@ -38,6 +39,7 @@ function TreeNodeRow({
   showValues,
   showCounts,
   isFocused,
+  onSelectRange,
   onDragStart,
   onDragOver,
   onDragEnd,
@@ -93,7 +95,7 @@ function TreeNodeRow({
         aria-expanded={isContainer ? isExpanded : undefined}
         onClick={(e) => {
           if (e.shiftKey) {
-            actions.selectNodeRange(node.id);
+            onSelectRange(node.id);
           } else if (e.metaKey || e.ctrlKey) {
             actions.toggleNodeSelection(node.id);
           } else {
@@ -232,6 +234,7 @@ function TreeNodeRow({
             showValues={showValues}
             showCounts={showCounts}
             isFocused={isFocused}
+            onSelectRange={onSelectRange}
             onDragStart={onDragStart}
             onDragOver={onDragOver}
             onDragEnd={onDragEnd}
@@ -270,6 +273,14 @@ export function TreeView({
     handleDragEnd,
     handleDrop,
   } = useDragDrop(visibleNodes, state.selectedNodeIds);
+
+  const handleSelectRange = useCallback(
+    (nodeId: string) => {
+      actions.setVisibleNodesOverride(visibleNodes);
+      actions.selectNodeRange(nodeId);
+    },
+    [visibleNodes, actions],
+  );
 
   const [contextMenu, setContextMenu] = useState<{
     x: number;
@@ -396,7 +407,7 @@ export function TreeView({
           const next = visibleNodes[currentIndex + 1];
           if (next) {
             if (e.shiftKey) {
-              actions.selectNodeRange(next.id);
+              handleSelectRange(next.id);
             } else {
               actions.selectNode(next.id);
             }
@@ -408,7 +419,7 @@ export function TreeView({
           const prev = visibleNodes[currentIndex - 1];
           if (prev) {
             if (e.shiftKey) {
-              actions.selectNodeRange(prev.id);
+              handleSelectRange(prev.id);
             } else {
               actions.selectNode(prev.id);
             }
@@ -493,6 +504,7 @@ export function TreeView({
       state.expandedNodeIds,
       state.tree,
       actions,
+      handleSelectRange,
     ],
   );
 
@@ -536,6 +548,7 @@ export function TreeView({
           showValues={showValues}
           showCounts={showCounts}
           isFocused={isFocused}
+          onSelectRange={handleSelectRange}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
