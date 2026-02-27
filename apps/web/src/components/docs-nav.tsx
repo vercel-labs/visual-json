@@ -7,6 +7,7 @@ const nav = [
   { href: "/docs/getting-started", label: "Getting Started" },
   { href: "/docs/core", label: "Core API" },
   { href: "/docs/react", label: "React Components" },
+  { href: "/docs/changelog", label: "Changelog" },
 ];
 
 function Sidebar() {

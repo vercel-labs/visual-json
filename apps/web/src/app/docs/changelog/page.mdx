@@ -1,0 +1,54 @@
+export { metadata } from "./metadata";
+
+# Changelog
+
+## 0.2.0
+
+### Features
+
+- **Multi-select** — shift-click range selection, cmd/ctrl-click toggle, and bulk drag-and-drop reordering in TreeView.
+- **Enum dropdowns** — schema-aware enum dropdowns in FormView, including boolean enums.
+- **VS Code extension** — breadcrumbs, form view, and search bar adapted for the VS Code webview.
+
+### Fixes
+
+- Prevent dropping a node into its own descendants.
+- Sync tree mode edits to raw mode.
+- Fix mobile focus issues in breadcrumbs, form view, and search bar.
+
+### Core
+
+- `isDescendant` utility moved to `@visual-json/core` with unit tests.
+- New operations: `insertProperty`, `insertNode`, `reorderChildrenMulti`, `buildSubtree`, `reparentSubtree`.
+
+---
+
+## 0.1.1
+
+### Patch Changes
+
+- Fix published package configuration.
+
+---
+
+## 0.1.0
+
+Initial release.
+
+### `@visual-json/core`
+
+- JSON-to-tree model (`fromJson` / `toJson`) with stable node IDs.
+- Full mutation API: `setValue`, `setKey`, `addProperty`, `removeNode`, `moveNode`, `reorderChildren`, `changeType`, `duplicateNode`.
+- Undo / redo via `History` class.
+- Tree search with `searchNodes`.
+- JSON Schema resolution and per-node validation (`resolveSchema`, `validateNode`).
+
+### `@visual-json/react`
+
+- `VisualJson` context provider with state management, history, and search.
+- `JsonEditor` wrapper component for quick integration.
+- `TreeView` — collapsible tree editor with keyboard navigation and drag-and-drop.
+- `FormView` — inline schema-aware form editor.
+- `SearchBar` — search with match navigation, expand/collapse controls.
+- `Breadcrumbs` — path-based breadcrumb navigation.
+- `ContextMenu` — right-click context menu for node operations.
