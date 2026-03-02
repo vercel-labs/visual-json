@@ -15,9 +15,5 @@
     "declarationMap": true,
     "sourceMap": true
   },
-  "exclude": ["node_modules", "dist"],
-  "paths": {
-    "@visual-json/core": ["packages/core/src"],
-    "@visual-json/ui-shared": ["packages/ui-shared/src"]
-  }
+  "exclude": ["node_modules", "dist"]
 }
