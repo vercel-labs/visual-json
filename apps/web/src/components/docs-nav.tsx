@@ -8,6 +8,7 @@ const nav = [
   { href: "/docs/core", label: "Core API" },
   { href: "/docs/react", label: "React Components" },
   { href: "/docs/vue", label: "Vue Components" },
+  { href: "/docs/changelog", label: "Changelog" },
 ];
 
 function Sidebar() {

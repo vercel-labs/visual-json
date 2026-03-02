@@ -12,6 +12,7 @@ export const PAGE_TITLES: Record<string, string> = {
   "docs/core": "Core API",
   "docs/react": "React Components",
   "docs/vue": "Vue Components",
+  "docs/changelog": "Changelog",
 };
 
 export function getPageTitle(slug: string): string | null {
