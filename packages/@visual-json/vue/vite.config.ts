@@ -11,7 +11,7 @@ export default defineConfig({
       outDir: "dist",
       insertTypesEntry: true,
       rollupTypes: true,
-      bundledPackages: ["@internal/ui-shared"],
+      bundledPackages: ["@internal/ui"],
     }),
   ],
   build: {

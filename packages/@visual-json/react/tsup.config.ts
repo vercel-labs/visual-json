@@ -3,9 +3,9 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["cjs", "esm"],
-  dts: { resolve: ["@internal/ui-shared"] },
+  dts: { resolve: ["@internal/ui"] },
   sourcemap: true,
   clean: true,
-  noExternal: ["@internal/ui-shared"],
+  noExternal: ["@internal/ui"],
   external: ["react", "react-dom", "@visual-json/core"],
 });

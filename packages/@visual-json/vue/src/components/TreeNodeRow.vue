@@ -2,7 +2,7 @@
 import { shallowRef } from "vue";
 import type { TreeNode } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
-import { getDisplayKey, setMultiDragImage } from "@internal/ui-shared";
+import { getDisplayKey, setMultiDragImage } from "@internal/ui";
 import type { DragState } from "../composables/use-drag-drop";
 
 // Self-import for recursive usage

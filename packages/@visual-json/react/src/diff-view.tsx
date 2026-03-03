@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { computeDiff, type DiffEntry } from "@visual-json/core";
-import { DIFF_COLORS, formatValue } from "@internal/ui-shared";
+import { DIFF_COLORS, formatValue } from "@internal/ui";
 
 interface DiffRowProps {
   entry: DiffEntry;

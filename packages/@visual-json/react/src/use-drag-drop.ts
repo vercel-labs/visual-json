@@ -5,10 +5,10 @@ import {
   computeDrop,
   setMultiDragImage as setMultiDragImageShared,
   type DragState,
-} from "@internal/ui-shared";
+} from "@internal/ui";
 import { useStudio } from "./context";
 
-export type { DragState } from "@internal/ui-shared";
+export type { DragState } from "@internal/ui";
 
 const EMPTY_SET: ReadonlySet<string> = Object.freeze(new Set<string>());
 

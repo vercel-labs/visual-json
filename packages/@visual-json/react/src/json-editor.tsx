@@ -28,7 +28,7 @@ export interface JsonEditorProps {
   sidebarOpen?: boolean;
 }
 
-import { DEFAULT_CSS_VARS } from "./theme";
+import { DEFAULT_CSS_VARS } from "@internal/ui";
 
 export function JsonEditor({
   value,

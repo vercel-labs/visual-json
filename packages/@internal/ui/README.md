@@ -1,4 +1,4 @@
-# @internal/ui-shared
+# @internal/ui
 
 > **Internal package** — not published, not intended for direct consumption.
 

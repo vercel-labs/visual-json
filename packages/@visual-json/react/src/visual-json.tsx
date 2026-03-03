@@ -18,7 +18,7 @@ import {
   type TreeNode,
   type SearchMatch,
 } from "@visual-json/core";
-import { collectAllIds, getVisibleNodes } from "@internal/ui-shared";
+import { collectAllIds, getVisibleNodes } from "@internal/ui";
 import { StudioContext, type StudioState, type StudioActions } from "./context";
 import { computeRangeIds } from "./selection-utils";
 

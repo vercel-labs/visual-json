@@ -15,7 +15,7 @@ import {
   checkRequired as checkRequiredFn,
   parseInputValue,
   setMultiDragImage,
-} from "@internal/ui-shared";
+} from "@internal/ui";
 import { useStudio } from "../composables/use-studio";
 import { FORM_VIEW_KEY } from "./form-view-context";
 import EnumInput from "./EnumInput.vue";

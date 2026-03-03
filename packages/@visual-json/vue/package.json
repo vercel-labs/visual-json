@@ -37,7 +37,7 @@
     "@visual-json/core": "workspace:*"
   },
   "devDependencies": {
-    "@internal/ui-shared": "workspace:*",
+    "@internal/ui": "workspace:*",
     "@vitejs/plugin-vue": "^5.2.4",
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4",

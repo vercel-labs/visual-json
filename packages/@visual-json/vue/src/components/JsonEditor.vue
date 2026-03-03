@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { shallowRef, computed,watch, onMounted, onUnmounted, type CSSProperties } from "vue";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
-import { DEFAULT_CSS_VARS } from "@internal/ui-shared";
+import { DEFAULT_CSS_VARS } from "@internal/ui";
 import VisualJson from "./VisualJson.vue";
 import TreeView from "./TreeView.vue";
 import FormView from "./FormView.vue";

@@ -8,7 +8,7 @@ import {
 } from "@visual-json/core";
 import { useStudio } from "./context";
 import { ContextMenu, type ContextMenuEntry } from "./context-menu";
-import { getDisplayKey, getVisibleNodes } from "@internal/ui-shared";
+import { getDisplayKey, getVisibleNodes } from "@internal/ui";
 import { deleteSelectedNodes, computeSelectAllIds } from "./selection-utils";
 import {
   useDragDrop,

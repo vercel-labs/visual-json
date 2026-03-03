@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import { computeDiff, type DiffEntry } from "@visual-json/core";
-import { DIFF_COLORS, formatValue } from "@internal/ui-shared";
+import { DIFF_COLORS, formatValue } from "@internal/ui";
 
 const props = defineProps<{
   originalJson: unknown;

@@ -12,7 +12,7 @@ import {
   type TreeNode,
   type SearchMatch,
 } from "@visual-json/core";
-import { collectAllIds, getVisibleNodes } from "@internal/ui-shared";
+import { collectAllIds, getVisibleNodes } from "@internal/ui";
 import { STUDIO_KEY } from "../provide-inject";
 import type { StudioState, StudioActions } from "../provide-inject";
 import { computeRangeIds } from "../selection-utils";

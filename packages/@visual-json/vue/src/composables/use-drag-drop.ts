@@ -1,13 +1,9 @@
 import { shallowRef, type Ref } from "vue";
 import { isDescendant, type TreeNode } from "@visual-json/core";
-import {
-  type DragState,
-  INITIAL_DRAG_STATE,
-  computeDrop,
-} from "@internal/ui-shared";
+import { type DragState, INITIAL_DRAG_STATE, computeDrop } from "@internal/ui";
 import { useStudio } from "./use-studio";
 
-export type { DragState } from "@internal/ui-shared";
+export type { DragState } from "@internal/ui";
 
 export function useDragDrop(
   visibleNodes: Ref<TreeNode[]>,

@@ -37,7 +37,7 @@
     "@visual-json/core": "workspace:*"
   },
   "devDependencies": {
-    "@internal/ui-shared": "workspace:*",
+    "@internal/ui": "workspace:*",
     "@types/react": "^19.2.14",
     "react": "^19.2.4",
     "tsup": "^8.5.1",

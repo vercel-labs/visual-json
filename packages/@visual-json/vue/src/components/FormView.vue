@@ -3,7 +3,7 @@ import { shallowRef, computed, watch, provide, onMounted, onUnmounted } from "vu
 import type { JsonSchemaProperty } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
-import { getVisibleNodes, getDisplayKey } from "@internal/ui-shared";
+import { getVisibleNodes, getDisplayKey } from "@internal/ui";
 import { deleteSelectedNodes, computeSelectAllIds } from "../selection-utils";
 import { FORM_VIEW_KEY } from "./form-view-context";
 import Breadcrumbs from "./Breadcrumbs.vue";

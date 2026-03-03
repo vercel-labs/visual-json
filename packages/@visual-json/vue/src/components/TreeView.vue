@@ -9,7 +9,7 @@ import {
 } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
-import { getVisibleNodes } from "@internal/ui-shared";
+import { getVisibleNodes } from "@internal/ui";
 import { deleteSelectedNodes, computeSelectAllIds } from "../selection-utils";
 import TreeNodeRow from "./TreeNodeRow.vue";
 import ContextMenu, { type ContextMenuEntry } from "./ContextMenu.vue";

@@ -3,7 +3,7 @@ export type { JsonValue, JsonSchema } from "@visual-json/core";
 
 export { VisualJson, type VisualJsonProps } from "./visual-json";
 export { TreeView, type TreeViewProps } from "./tree-view";
-export { getVisibleNodes } from "@internal/ui-shared";
+export { getVisibleNodes } from "@internal/ui";
 export { Breadcrumbs, type BreadcrumbsProps } from "./breadcrumbs";
 export { SearchBar, type SearchBarProps } from "./search-bar";
 export { FormView, type FormViewProps } from "./form-view";
