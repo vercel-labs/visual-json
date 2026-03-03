@@ -13,7 +13,8 @@
 
 	const DROPDOWN_MAX_HEIGHT = 200;
 
-	let inputValue = $state(value);
+	const initialInputValue = (() => value)();
+	let inputValue = $state(initialInputValue);
 	let open = $state(false);
 	let highlightIndex = $state(0);
 	let listRef = $state<HTMLDivElement | null>(null);
@@ -140,7 +141,7 @@
 				box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 			"
 		>
-			{#each suggestions as s, i}
+			{#each suggestions as s, i (`${s}-${i}`)}
 				<div
 					role="option"
 					aria-selected={i === highlightIndex}

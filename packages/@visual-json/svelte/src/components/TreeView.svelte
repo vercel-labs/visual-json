@@ -51,6 +51,14 @@
 		contextMenu = { x: e.clientX, y: e.clientY, node };
 	}
 
+	async function writeClipboardText(text: string) {
+		try {
+			await navigator.clipboard.writeText(text);
+		} catch (error) {
+			console.error('Failed to write to clipboard', error);
+		}
+	}
+
 	function buildContextMenuItems(node: TreeNode): ContextMenuEntry[] {
 		const items: ContextMenuEntry[] = [];
 		const isNodeContainer = node.type === 'object' || node.type === 'array';
@@ -86,14 +94,16 @@
 
 		items.push({
 			label: 'Copy path',
-			action: () => navigator.clipboard.writeText(node.path).catch(() => {})
+			action: () => {
+				void writeClipboardText(node.path);
+			}
 		});
 		items.push({
 			label: 'Copy value as JSON',
 			action: () => {
 				const val = toJson(node);
 				const text = typeof val === 'string' ? val : JSON.stringify(val, null, 2);
-				navigator.clipboard.writeText(text).catch(() => {});
+				void writeClipboardText(text);
 			}
 		});
 

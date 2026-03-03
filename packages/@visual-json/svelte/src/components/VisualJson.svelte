@@ -15,6 +15,7 @@
 	} from '@visual-json/core';
 	import { collectAllIds, getVisibleNodes } from '@internal/ui';
 	import { STUDIO_KEY, type StudioState, type StudioActions } from '../context.js';
+	import { createInternalChangeGuard } from '../internal-change-guard.js';
 	import { computeRangeIds } from '../selection-utils.js';
 
 	interface Props {
@@ -26,12 +27,16 @@
 
 	let { value, schema = null, onchange, children }: Props = $props();
 
-	let tree = $state<TreeState>(fromJson(value));
+	const internalChangeGuard = createInternalChangeGuard();
+	let syncToken = $state(0);
+	let expectedInternalSyncValue = $state<JsonValue | null>(null);
+	const initialTree = (() => fromJson(value))();
+	let tree = $state<TreeState>(initialTree);
 	let focusedNodeId = $state<string | null>(null);
 	let selectedNodeIds = $state<Set<string>>(new Set());
 	let anchorNodeId = $state<string | null>(null);
 	let drillDownNodeId = $state<string | null>(null);
-	let expandedNodeIds = $state<Set<string>>(new Set([tree.root.id]));
+	let expandedNodeIds = $state<Set<string>>(new Set([initialTree.root.id]));
 
 	let visibleNodesOverride: TreeNode[] | null = null;
 	let history = new History();
@@ -40,10 +45,7 @@
 	let searchQuery = $state('');
 	let searchMatches = $state<SearchMatch[]>([]);
 	let searchMatchIndex = $state(0);
-
-	let isInternalChange = false;
-
-	history.push(tree);
+	history.push(initialTree);
 
 	function focusSelectAndDrillDown(nodeId: string | null) {
 		focusedNodeId = nodeId;
@@ -52,14 +54,8 @@
 		drillDownNodeId = nodeId;
 	}
 
-	// Sync external value changes
-	$effect(() => {
-		const v = value;
-		if (isInternalChange) {
-			isInternalChange = false;
-			return;
-		}
-		const newTree = fromJson(v);
+	function resetFromExternalValue(externalValue: JsonValue) {
+		const newTree = fromJson(externalValue);
 		tree = newTree;
 		expandedNodeIds = new Set([newTree.root.id]);
 		focusSelectAndDrillDown(null);
@@ -69,6 +65,25 @@
 		searchQuery = '';
 		searchMatches = [];
 		searchMatchIndex = 0;
+	}
+
+	// Sync external value changes
+	$effect(() => {
+		const externalValue = value;
+		const token = untrack(() => syncToken);
+		if (!internalChangeGuard.shouldHandleExternalSync(token)) {
+			if (expectedInternalSyncValue !== null) {
+				const expected = expectedInternalSyncValue;
+				expectedInternalSyncValue = null;
+				if (
+					Object.is(externalValue, expected) ||
+					JSON.stringify(externalValue) === JSON.stringify(expected)
+				) {
+					return;
+				}
+			}
+		}
+		resetFromExternalValue(externalValue);
 	});
 
 	// Update search results when tree changes
@@ -81,12 +96,18 @@
 		searchMatchIndex = Math.min(untrack(() => searchMatchIndex), Math.max(matches.length - 1, 0));
 	});
 
+	function emitInternalChange(nextTree: TreeState) {
+		const nextValue = toJson(nextTree.root);
+		expectedInternalSyncValue = nextValue;
+		syncToken = internalChangeGuard.markInternal();
+		onchange?.(nextValue);
+	}
+
 	function setTree(newTree: TreeState) {
 		tree = newTree;
 		history.push(newTree);
 		historyVersion++;
-		isInternalChange = true;
-		onchange?.(toJson(newTree.root));
+		emitInternalChange(newTree);
 	}
 
 	function undo() {
@@ -94,8 +115,7 @@
 		if (prev) {
 			tree = prev;
 			historyVersion++;
-			isInternalChange = true;
-			onchange?.(toJson(prev.root));
+			emitInternalChange(prev);
 		}
 	}
 
@@ -104,8 +124,7 @@
 		if (next) {
 			tree = next;
 			historyVersion++;
-			isInternalChange = true;
-			onchange?.(toJson(next.root));
+			emitInternalChange(next);
 		}
 	}
 

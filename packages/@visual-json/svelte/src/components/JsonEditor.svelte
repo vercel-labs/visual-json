@@ -40,14 +40,18 @@
 		sidebarOpen = true
 	}: Props = $props();
 
-	const isControlled = valueProp !== undefined;
-	let currentValue = $state.raw<JsonValue>(
-		isControlled ? (valueProp as JsonValue) : (defaultValue ?? {})
-	);
+	const isControlled = $derived(valueProp !== undefined);
+	let currentValue = $state.raw<JsonValue>({});
+	let hasInitializedUncontrolled = false;
 
 	$effect(() => {
-		if (isControlled && valueProp !== undefined) {
+		if (valueProp !== undefined) {
 			currentValue = valueProp;
+			return;
+		}
+		if (!hasInitializedUncontrolled) {
+			currentValue = defaultValue ?? {};
+			hasInitializedUncontrolled = true;
 		}
 	});
 
@@ -63,9 +67,11 @@
 	let isNarrow = $state(false);
 	let activePanel = $state<'tree' | 'form'>('tree');
 	let containerRef = $state<HTMLDivElement | null>(null);
-	let dragging = false;
+	let isDragging = $state(false);
 	let startX = 0;
 	let startWidth = 0;
+	let dragMoveHandler: ((event: MouseEvent) => void) | null = null;
+	let dragUpHandler: (() => void) | null = null;
 
 	function checkWidth() {
 		if (containerRef) {
@@ -81,29 +87,40 @@
 		return () => observer.disconnect();
 	});
 
+	function stopDragging() {
+		if (dragMoveHandler) {
+			document.removeEventListener('mousemove', dragMoveHandler);
+			dragMoveHandler = null;
+		}
+		if (dragUpHandler) {
+			document.removeEventListener('mouseup', dragUpHandler);
+			dragUpHandler = null;
+		}
+		isDragging = false;
+		document.body.style.cursor = '';
+		document.body.style.userSelect = '';
+	}
+
+	$effect(() => stopDragging);
+
 	function handleMouseDown(e: MouseEvent) {
-		dragging = true;
+		stopDragging();
+		isDragging = true;
 		startX = e.clientX;
 		startWidth = sidebarWidth;
 		document.body.style.cursor = 'col-resize';
 		document.body.style.userSelect = 'none';
 
-		function handleMouseMove(ev: MouseEvent) {
-			if (!dragging) return;
+		dragMoveHandler = (ev: MouseEvent) => {
+			if (!isDragging) return;
 			const delta = ev.clientX - startX;
 			sidebarWidth = Math.max(180, Math.min(600, startWidth + delta));
-		}
+		};
 
-		function handleMouseUp() {
-			dragging = false;
-			document.body.style.cursor = '';
-			document.body.style.userSelect = '';
-			document.removeEventListener('mousemove', handleMouseMove);
-			document.removeEventListener('mouseup', handleMouseUp);
-		}
+		dragUpHandler = stopDragging;
 
-		document.addEventListener('mousemove', handleMouseMove);
-		document.addEventListener('mouseup', handleMouseUp);
+		document.addEventListener('mousemove', dragMoveHandler);
+		document.addEventListener('mouseup', dragUpHandler);
 	}
 
 	const containerStyle = $derived.by(() => {
@@ -233,9 +250,7 @@
 							"
 						>
 							<div
-								role="separator"
-								aria-orientation="vertical"
-								aria-label="Resize sidebar"
+								aria-hidden="true"
 								style="
 									position: absolute;
 									top: 0;
@@ -251,7 +266,7 @@
 									if (parent) parent.style.backgroundColor = 'var(--vj-accent, #007acc)';
 								}}
 								onmouseleave={(e) => {
-									if (!dragging) {
+									if (!isDragging) {
 										const parent = (e.currentTarget as HTMLElement).parentElement;
 										if (parent) parent.style.backgroundColor = 'var(--vj-border, #333333)';
 									}
