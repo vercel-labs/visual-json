@@ -1,14 +1,11 @@
 {
 	"name": "@visual-json/svelte",
-	"version": "0.0.1",
+	"version": "0.0.0",
 	"scripts": {
-		"dev": "vite dev",
-		"build": "vite build && npm run prepack",
-		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"prepack": "svelte-kit sync && svelte-package && publint",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+	  "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
+    "postpack": "node ../../../scripts/restore-package-json.mjs",
+	  "build": "svelte-package --input ./src --output ./dist",
+		"check-types": "svelte-check --tsconfig ./tsconfig.json"
 	},
 	"files": [
 		"dist",
@@ -36,15 +33,12 @@
 	},
 	"devDependencies": {
 	  "@internal/ui": "workspace:*",
-		"@sveltejs/adapter-auto": "^7.0.0",
-		"@sveltejs/kit": "^2.50.2",
 		"@sveltejs/package": "^2.5.7",
 		"@sveltejs/vite-plugin-svelte": "^6.2.4",
-		"publint": "^0.3.17",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.4.2",
-		"typescript": "^5.9.3",
-		"vite": "^7.3.1"
+		"typescript": "5.9.3",
+		"vite": "^6.3.5"
 	},
 	"keywords": [
 		"svelte"

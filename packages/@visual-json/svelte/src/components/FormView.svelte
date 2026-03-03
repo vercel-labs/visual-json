@@ -242,8 +242,8 @@
 	const formCtx: FormViewContext = {
 		get schema() { return schema; },
 		get rootSchema() { return rootSchema; },
-		showDescriptions,
-		showCounts,
+		get showDescriptions() { return showDescriptions; },
+		get showCounts() { return showCounts; },
 		get editingNodeId() { return editingNodeId; },
 		get collapsedIds() { return collapsedIds; },
 		get maxKeyLength() { return metrics.maxKeyLength; },
@@ -288,6 +288,7 @@
 	<div
 		bind:this={containerRef}
 		data-form-container
+		role="tree"
 		tabindex="0"
 		style="flex: 1; overflow: auto; outline: none;"
 		onkeydown={handleKeyDown}

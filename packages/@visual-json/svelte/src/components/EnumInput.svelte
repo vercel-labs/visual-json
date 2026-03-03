@@ -1,47 +1,30 @@
 <script lang="ts">
-	import { useStudio } from '../use-studio.js';
+	import { tick } from 'svelte';
+	import type { JsonValue } from '@visual-json/core';
 
 	interface Props {
-		class?: string;
+		enumValues: JsonValue[];
+		value: string;
+		inputStyle?: Record<string, string>;
+		onvaluechange?: (val: string) => void;
 	}
 
-	let { class: className }: Props = $props();
+	let { enumValues, value, inputStyle, onvaluechange }: Props = $props();
 
-	const { state: studioState, actions } = useStudio();
-
-	const MAX_SUGGESTIONS = 20;
 	const DROPDOWN_MAX_HEIGHT = 200;
 
-	let inputValue = $state('');
+	let inputValue = $state(value);
 	let open = $state(false);
 	let highlightIndex = $state(0);
-	let inputRef = $state<HTMLInputElement | null>(null);
 	let listRef = $state<HTMLDivElement | null>(null);
 	let wrapperRef = $state<HTMLDivElement | null>(null);
+	let localInputRef = $state<HTMLInputElement | null>(null);
 
-	const drillDownNode = $derived(
-		studioState.drillDownNodeId ? studioState.tree.nodesById.get(studioState.drillDownNodeId) : null
-	);
-	const currentPath = $derived(drillDownNode?.path ?? '/');
-
-	// Sync inputValue when currentPath changes
 	$effect(() => {
-		inputValue = currentPath;
+		inputValue = value;
 	});
 
-	const suggestions = $derived.by(() => {
-		if (!open) return [];
-		const query = inputValue.toLowerCase();
-		const matches: { id: string; path: string }[] = [];
-		for (const [id, node] of studioState.tree.nodesById) {
-			if (node.path.toLowerCase().startsWith(query)) {
-				matches.push({ id, path: node.path });
-			}
-			if (matches.length >= MAX_SUGGESTIONS) break;
-		}
-		matches.sort((a, b) => a.path.localeCompare(b.path));
-		return matches;
-	});
+	const suggestions = $derived(enumValues.map((v) => String(v)));
 
 	$effect(() => {
 		// reset highlight when suggestions change
@@ -63,85 +46,82 @@
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	});
 
-	function navigateTo(path: string) {
-		for (const [id, node] of studioState.tree.nodesById) {
-			if (node.path === path) {
-				actions.selectAndDrillDown(id);
-				break;
-			}
-		}
+	function selectValue(val: string) {
+		onvaluechange?.(val);
+		inputValue = val;
 		open = false;
-		inputRef?.blur();
 	}
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if (!open) {
-			if (e.key === 'ArrowDown' || e.key === 'Enter') {
-				open = true;
+			if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
 				e.preventDefault();
+				e.stopPropagation();
+				open = true;
 			}
 			return;
 		}
 		switch (e.key) {
 			case 'ArrowDown':
 				e.preventDefault();
+				e.stopPropagation();
 				highlightIndex = Math.min(highlightIndex + 1, suggestions.length - 1);
 				break;
 			case 'ArrowUp':
 				e.preventDefault();
+				e.stopPropagation();
 				highlightIndex = Math.max(highlightIndex - 1, 0);
 				break;
 			case 'Enter':
 				e.preventDefault();
+				e.stopPropagation();
 				if (suggestions.length > 0 && highlightIndex < suggestions.length) {
-					navigateTo(suggestions[highlightIndex].path);
-				} else {
-					navigateTo(inputValue.trim() || '/');
+					selectValue(suggestions[highlightIndex]);
 				}
 				break;
 			case 'Escape':
 				e.preventDefault();
-				inputValue = currentPath;
+				e.stopPropagation();
+				inputValue = value;
 				open = false;
-				inputRef?.blur();
+				break;
+			case 'Tab':
+				inputValue = value;
+				open = false;
 				break;
 		}
 	}
 
 	function handleClickOutside(e: MouseEvent) {
 		if (wrapperRef && !wrapperRef.contains(e.target as Node)) {
-			inputValue = currentPath;
+			inputValue = value;
 			open = false;
 		}
 	}
+
+	export function focus() {
+		localInputRef?.focus();
+	}
 </script>
 
-<div bind:this={wrapperRef} class={className} style="position: relative; flex: 1; min-width: 0;">
+<div bind:this={wrapperRef} style="position: relative; flex: 1; min-width: 0;">
 	<input
-		bind:this={inputRef}
+		bind:this={localInputRef}
 		value={inputValue}
 		spellcheck="false"
 		autocomplete="off"
-		style="
-			width: 100%;
-			box-sizing: border-box;
-			padding: 3px 0;
-			font-size: var(--vj-input-font-size, 13px);
-			font-family: var(--vj-font, monospace);
-			color: var(--vj-text-muted, #999999);
-			background: transparent;
-			border: none;
-			outline: none;
-		"
+		style={inputStyle
+			? Object.entries(inputStyle)
+					.map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}:${v}`)
+					.join(';')
+			: ''}
 		oninput={(e) => {
 			inputValue = (e.target as HTMLInputElement).value;
 			if (!open) open = true;
 		}}
-		onfocus={(e) => {
-			(e.target as HTMLInputElement).select();
-			open = true;
-		}}
+		onfocus={() => (open = true)}
 		onkeydown={handleKeyDown}
+		onclick={(e) => e.stopPropagation()}
 	/>
 
 	{#if open && suggestions.length > 0}
@@ -149,9 +129,9 @@
 			bind:this={listRef}
 			style="
 				position: absolute;
-				top: 100%;
-				left: -12px;
-				right: -12px;
+				top: calc(100% + 4px);
+				left: -32px;
+				right: 0;
 				z-index: 50;
 				max-height: {DROPDOWN_MAX_HEIGHT}px;
 				overflow-y: auto;
@@ -164,10 +144,14 @@
 				<div
 					role="option"
 					aria-selected={i === highlightIndex}
+					tabindex="-1"
 					style="
 						padding: 4px 12px;
 						font-size: 13px;
 						font-family: var(--vj-font, monospace);
+						display: flex;
+						align-items: center;
+						gap: 6px;
 						color: {i === highlightIndex ? 'var(--vj-text, #cccccc)' : 'var(--vj-text-muted, #888888)'};
 						background-color: {i === highlightIndex ? 'var(--vj-bg-hover, #2a2d2e)' : 'transparent'};
 						cursor: pointer;
@@ -177,11 +161,14 @@
 					"
 					onmousedown={(e) => {
 						e.preventDefault();
-						navigateTo(s.path);
+						selectValue(s);
 					}}
 					onmouseenter={() => (highlightIndex = i)}
 				>
-					{s.path}
+					<span style="width: 14px; flex-shrink: 0; font-size: 12px;">
+						{s === value ? '✓' : ''}
+					</span>
+					{s}
 				</div>
 			{/each}
 		</div>

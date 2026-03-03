@@ -38,8 +38,8 @@
 	const { state: studioState, actions } = useStudio();
 	let hovered = $state(false);
 
-	const isContainer = node.type === 'object' || node.type === 'array';
-	const isRoot = node.parentId === null;
+	const isContainer = $derived(node.type === 'object' || node.type === 'array');
+	const isRoot = $derived(node.parentId === null);
 
 	function isSelected() {
 		return studioState.selectedNodeIds.has(node.id);
@@ -113,6 +113,13 @@
 		}
 	}
 
+	function handleKeyDown(e: KeyboardEvent) {
+		if (e.key === 'Enter' || e.key === ' ') {
+			e.preventDefault();
+			actions.selectAndDrillDown(node.id);
+		}
+	}
+
 	function handleDragStart(e: DragEvent) {
 		e.dataTransfer!.effectAllowed = 'move';
 		if (studioState.selectedNodeIds.size > 1 && studioState.selectedNodeIds.has(node.id)) {
@@ -126,6 +133,7 @@
 	role="treeitem"
 	aria-selected={isSelected()}
 	aria-expanded={isContainer ? isExpanded() : undefined}
+	tabindex="-1"
 	draggable={!isRoot}
 	data-node-id={node.id}
 	style="
@@ -145,6 +153,7 @@
 		color: {isSelected() && isFocused ? 'var(--vj-text-selected, var(--vj-text, #cccccc))' : 'var(--vj-text, #cccccc)'};
 	"
 	onclick={handleClick}
+	onkeydown={handleKeyDown}
 	onmouseenter={() => (hovered = true)}
 	onmouseleave={() => (hovered = false)}
 	oncontextmenu={(e) => oncontextmenu?.(e, node)}

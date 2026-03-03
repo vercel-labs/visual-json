@@ -156,6 +156,10 @@
 {#if isContainer}
 	<div>
 		<div
+			role="treeitem"
+			aria-selected={isSelected}
+			aria-expanded={!collapsed}
+			tabindex="-1"
 			data-form-node-id={node.id}
 			draggable={!isRoot}
 			style="
@@ -175,6 +179,7 @@
 				border-bottom: 2px solid {getBorderBottomColor()};
 			"
 			onclick={(e) => { e.stopPropagation(); ctx.onSelect(node.id, e); }}
+			onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ctx.onToggleCollapse(node.id); } }}
 			ondblclick={() => ctx.onToggleCollapse(node.id)}
 			onmouseenter={() => (hovered = true)}
 			onmouseleave={() => (hovered = false)}
@@ -322,6 +327,9 @@
 {:else}
 	<!-- Leaf node -->
 	<div
+		role="treeitem"
+		aria-selected={isSelected}
+		tabindex="-1"
 		data-form-node-id={node.id}
 		draggable={!isRoot}
 		style="
@@ -341,6 +349,7 @@
 			border-bottom: 2px solid {getBorderBottomColor()};
 		"
 		onclick={(e) => { e.stopPropagation(); ctx.onSelect(node.id, e); }}
+		onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ctx.onStartEditing(node.id); } }}
 		ondblclick={() => ctx.onStartEditing(node.id)}
 		onmouseenter={() => (hovered = true)}
 		onmouseleave={() => (hovered = false)}

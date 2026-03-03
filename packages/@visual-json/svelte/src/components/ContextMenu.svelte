@@ -25,7 +25,8 @@
 	let { x, y, items, onclose }: Props = $props();
 
 	let menuRef = $state<HTMLDivElement | null>(null);
-	let pos = $state({ left: x, top: y });
+	let pos = $state({ left: 0, top: 0 });
+	$effect.pre(() => { pos = { left: x, top: y }; });
 
 	async function adjustPosition() {
 		await tick();

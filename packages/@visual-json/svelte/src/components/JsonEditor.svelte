@@ -237,6 +237,9 @@
 							"
 						>
 							<div
+								role="separator"
+								aria-orientation="vertical"
+								aria-label="Resize sidebar"
 								style="
 									position: absolute;
 									top: 0;
