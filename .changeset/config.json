@@ -3,9 +3,9 @@
   "changelog": "@changesets/cli/changelog",
   "commit": false,
   "fixed": [],
-  "linked": [["@visual-json/core", "@visual-json/react"]],
+  "linked": [["@visual-json/core", "@visual-json/react", "@visual-json/vue"]],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@visual-json/web", "@visual-json/example-react"]
+  "ignore": ["@visual-json/web", "@visual-json/example-react", "@visual-json/example-vue"]
 }

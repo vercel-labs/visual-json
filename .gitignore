@@ -6,6 +6,7 @@ coverage
 .env*
 !.env.example
 .DS_Store
+*.bak
 .next
 next-env.d.ts
 test-results

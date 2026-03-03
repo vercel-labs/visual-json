@@ -29,6 +29,8 @@
   "scripts": {
     "build": "vite build",
     "dev": "vite build --watch",
+    "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
+    "postpack": "node ../../../scripts/restore-package-json.mjs",
     "check-types": "vue-tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,vue}\""
