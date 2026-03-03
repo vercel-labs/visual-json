@@ -1,5 +1,17 @@
 # @visual-json/react
 
+## 0.3.0
+
+### Minor Changes
+
+- Shared UI utilities (diff, drag-and-drop, form, tree helpers, theme) extracted to `@internal/ui` for cross-framework reuse.
+- Refactored monorepo package structure: packages moved under `packages/@visual-json/`.
+
+### Patch Changes
+
+- Updated dependencies
+  - @visual-json/core@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

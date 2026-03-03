@@ -1,6 +1,6 @@
 {
   "name": "@visual-json/react",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "Apache-2.0",
   "description": "React components for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
   "keywords": [

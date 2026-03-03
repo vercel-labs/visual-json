@@ -7,5 +7,6 @@ export const allDocsPages: NavItem[] = [
   { name: "Getting Started", href: "/docs/getting-started" },
   { name: "Core API", href: "/docs/core" },
   { name: "React Components", href: "/docs/react" },
+  { name: "Vue Components", href: "/docs/vue" },
   { name: "Changelog", href: "/docs/changelog" },
 ];

@@ -1,5 +1,12 @@
 # @visual-json/core
 
+## 0.3.0
+
+### Minor Changes
+
+- Vue support — shared core logic powers both `@visual-json/react` and `@visual-json/vue`.
+- Refactored monorepo package structure: packages moved under `packages/@visual-json/`, shared UI utilities extracted to `@internal/ui`.
+
 ## 0.2.0
 
 ### Minor Changes
