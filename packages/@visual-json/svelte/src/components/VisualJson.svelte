@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { setContext } from 'svelte';
+	import { setContext, untrack } from 'svelte';
 	import type { Snippet } from 'svelte';
 	import {
 		fromJson,
@@ -65,7 +65,7 @@
 		focusSelectAndDrillDown(null);
 		history = new History();
 		history.push(newTree);
-		historyVersion++;
+		untrack(() => historyVersion++);
 		searchQuery = '';
 		searchMatches = [];
 		searchMatchIndex = 0;
@@ -78,7 +78,7 @@
 		if (!query.trim()) return;
 		const matches = searchNodes(currentTree, query);
 		searchMatches = matches;
-		searchMatchIndex = Math.min(searchMatchIndex, Math.max(matches.length - 1, 0));
+		searchMatchIndex = Math.min(untrack(() => searchMatchIndex), Math.max(matches.length - 1, 0));
 	});
 
 	function setTree(newTree: TreeState) {

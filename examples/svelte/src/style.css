@@ -1,0 +1,212 @@
+html,
+body,
+#app {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f5;
+    --bg-hover: #ebebeb;
+    --border: #e0e0e0;
+    --text: #1a1a1a;
+    --text-muted: #666666;
+    --toolbar-bg: #f8f8f8;
+    --toolbar-border: #e0e0e0;
+    --btn-bg: #ebebeb;
+    --btn-bg-hover: #dcdcdc;
+    --btn-active-bg: #dce6f5;
+    --btn-active-text: #1a73e8;
+    --select-bg: #ffffff;
+    --error-bg: #fff3f3;
+    --error-text: #c62828;
+    --drop-overlay-bg: rgba(0, 0, 0, 0.4);
+    --input-bg: #ffffff;
+    --input-border: #cccccc;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --bg-secondary: #252526;
+    --bg-hover: #2a2d2e;
+    --border: #333333;
+    --text: #cccccc;
+    --text-muted: #888888;
+    --toolbar-bg: #252526;
+    --toolbar-border: #333333;
+    --btn-bg: #3c3c3c;
+    --btn-bg-hover: #4a4a4a;
+    --btn-active-bg: #094771;
+    --btn-active-text: #ffffff;
+    --select-bg: #3c3c3c;
+    --error-bg: #3a1e1e;
+    --error-text: #f48771;
+    --drop-overlay-bg: rgba(0, 0, 0, 0.6);
+    --input-bg: #3c3c3c;
+    --input-border: #555555;
+  }
+}
+
+/* Toolbar button */
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  white-space: nowrap;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.toolbar-btn:hover {
+  background: var(--btn-bg-hover);
+  color: var(--text);
+}
+
+/* View toggle button */
+.view-toggle-btn {
+  background: none;
+  border: none;
+  border-right: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  padding: 3px 10px;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.view-toggle-btn:last-child {
+  border-right: none;
+}
+
+.view-toggle-btn.active {
+  background: var(--btn-active-bg);
+  color: var(--btn-active-text);
+}
+
+/* Error banner */
+.error-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--error-bg);
+  color: var(--error-text);
+  font-size: 12px;
+  font-family: monospace;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* Settings panel */
+.settings-panel {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  min-width: 280px;
+  max-width: 90vw;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.settings-panel h3 {
+  margin: 0 0 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.settings-panel h4 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.settings-close {
+  margin-top: 12px;
+  width: 100%;
+  padding: 8px;
+  background: var(--btn-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.settings-close:hover {
+  background: var(--btn-bg-hover);
+}
+
+/* Toggle switch */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 18px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 12px;
+  width: 12px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: #007acc;
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(14px);
+}

@@ -21,6 +21,10 @@ The visual JSON editor. Schema-aware, embeddable, extensible.
       <td>React UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>
     <tr>
+      <td><a href="packages/@visual-json/svelte"><code>@visual-json/svelte</code></a></td>
+      <td>Svelte 5 UI components (TreeView, FormView, DiffView, and more)</td>
+    </tr>
+    <tr>
       <td><a href="packages/@visual-json/vue"><code>@visual-json/vue</code></a></td>
       <td>Vue UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>

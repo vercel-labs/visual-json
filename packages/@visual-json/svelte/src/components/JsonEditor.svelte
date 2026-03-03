@@ -41,16 +41,13 @@
 	}: Props = $props();
 
 	const isControlled = valueProp !== undefined;
-	let currentValue = $state<JsonValue>(
+	let currentValue = $state.raw<JsonValue>(
 		isControlled ? (valueProp as JsonValue) : (defaultValue ?? {})
 	);
-	let editorKey = $state(0);
 
 	$effect(() => {
-		const val = valueProp;
-		if (isControlled && val !== undefined && val !== currentValue) {
-			currentValue = val;
-			editorKey++;
+		if (isControlled && valueProp !== undefined) {
+			currentValue = valueProp;
 		}
 	});
 
@@ -132,9 +129,8 @@
 			}
 		}
 	</style>
-	{#key editorKey}
-		<VisualJson value={currentValue} {schema} onchange={handleChange}>
-			{#if isNarrow}
+	<VisualJson value={currentValue} {schema} onchange={handleChange}>
+		{#if isNarrow}
 				<!-- Narrow layout (< 500px) -->
 				<div bind:this={containerRef} style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
 					{#if !sidebarOpen}
@@ -275,5 +271,4 @@
 				</div>
 			{/if}
 		</VisualJson>
-	{/key}
 </div>
