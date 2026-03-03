@@ -2,7 +2,7 @@
   "name": "@visual-json/vscode",
   "displayName": "visual-json",
   "description": "(Beta) Visual JSON editor with tree view, schema support, and search",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "license": "Apache-2.0",
   "publisher": "visual-json",
   "private": true,

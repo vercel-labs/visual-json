@@ -1,6 +1,6 @@
 {
   "name": "@visual-json/core",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "license": "Apache-2.0",
   "description": "Headless core for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
   "keywords": [

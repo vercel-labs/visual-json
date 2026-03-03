@@ -1,5 +1,13 @@
 # @visual-json/react
 
+## 0.3.1
+
+### Patch Changes
+
+- Fix published packages containing unresolved `workspace:*` dependencies
+- Updated dependencies
+  - @visual-json/core@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
