@@ -10,6 +10,8 @@ export default defineConfig({
       include: ["src/**/*.ts", "src/**/*.vue"],
       outDir: "dist",
       insertTypesEntry: true,
+      rollupTypes: true,
+      bundledPackages: ["@internal/ui-shared"],
     }),
   ],
   build: {

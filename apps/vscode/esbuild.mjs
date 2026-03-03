@@ -8,8 +8,8 @@ const isProduction = process.argv.includes("--production");
 const isWatch = process.argv.includes("--watch");
 
 const workspaceAliases = {
-  "@visual-json/core": path.resolve(__dirname, "../../packages/core/src/index.ts"),
-  "@visual-json/react": path.resolve(__dirname, "../../packages/react/src/index.ts"),
+  "@visual-json/core": path.resolve(__dirname, "../../packages/@visual-json/core/src/index.ts"),
+  "@visual-json/react": path.resolve(__dirname, "../../packages/@visual-json/react/src/index.ts"),
 };
 
 /** @type {import('esbuild').BuildOptions} */

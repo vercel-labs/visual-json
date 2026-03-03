@@ -13,15 +13,15 @@ The visual JSON editor. Schema-aware, embeddable, extensible.
   </thead>
   <tbody>
     <tr>
-      <td><a href="packages/core"><code>@visual-json/core</code></a></td>
+      <td><a href="packages/@visual-json/core"><code>@visual-json/core</code></a></td>
       <td>Headless tree model, operations, and schema types</td>
     </tr>
     <tr>
-      <td><a href="packages/react"><code>@visual-json/react</code></a></td>
+      <td><a href="packages/@visual-json/react"><code>@visual-json/react</code></a></td>
       <td>React UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>
     <tr>
-      <td><a href="packages/vue"><code>@visual-json/vue</code></a></td>
+      <td><a href="packages/@visual-json/vue"><code>@visual-json/vue</code></a></td>
       <td>Vue UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>
     <tr>
