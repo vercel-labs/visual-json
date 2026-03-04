@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { shallowRef, computed, watch, provide, onMounted, onUnmounted } from "vue";
+import {
+  shallowRef,
+  computed,
+  watch,
+  provide,
+  onMounted,
+  onUnmounted,
+} from "vue";
 import type { JsonSchemaProperty } from "@visual-json/core";
 import { useStudio } from "../composables/use-studio";
 import { useDragDrop } from "../composables/use-drag-drop";
@@ -46,8 +53,13 @@ const visibleNodes = computed(() =>
   getVisibleNodes(displayNode.value, (id) => !collapsedIds.value.has(id)),
 );
 
-const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
-  useDragDrop(visibleNodes, state.selectedNodeIds);
+const {
+  dragState,
+  handleDragStart,
+  handleDragOver,
+  handleDragEnd,
+  handleDrop,
+} = useDragDrop(visibleNodes, state.selectedNodeIds);
 
 // Override visible nodes for range selection in form view
 onMounted(() => {
@@ -175,8 +187,7 @@ function handleKeyDown(e: KeyboardEvent) {
     }
     case "ArrowRight": {
       e.preventDefault();
-      const node =
-        currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
+      const node = currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
       if (node && (node.type === "object" || node.type === "array")) {
         if (collapsedIds.value.has(node.id)) {
           const next = new Set(collapsedIds.value);
@@ -194,8 +205,7 @@ function handleKeyDown(e: KeyboardEvent) {
       const current =
         currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
       if (!current) break;
-      const isContainer =
-        current.type === "object" || current.type === "array";
+      const isContainer = current.type === "object" || current.type === "array";
       if (isContainer && !collapsedIds.value.has(current.id)) {
         const next = new Set(collapsedIds.value);
         next.add(current.id);
@@ -324,7 +334,9 @@ provide(FORM_VIEW_KEY, {
       @focus="() => (isFocused = true)"
       @blur="
         (e) => {
-          if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+          if (
+            !(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)
+          ) {
             isFocused = false;
           }
         }

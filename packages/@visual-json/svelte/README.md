@@ -16,12 +16,12 @@ The simplest way to embed a full JSON editor with tree view, form view, search, 
 
 ```svelte
 <script>
-  import { JsonEditor } from '@visual-json/svelte';
+  import { JsonEditor } from "@visual-json/svelte";
 
-  let value = $state({ name: 'Alice', age: 30 });
+  let value = $state({ name: "Alice", age: 30 });
 </script>
 
-<JsonEditor value={value} onChange={(v) => (value = v)} height="500px" />
+<JsonEditor {value} onChange={(v) => (value = v)} height="500px" />
 ```
 
 ### Composing individual panels
@@ -30,12 +30,17 @@ Use `<VisualJson>` as a provider and compose `<TreeView>`, `<FormView>`, and `<S
 
 ```svelte
 <script>
-  import { VisualJson, TreeView, FormView, SearchBar } from '@visual-json/svelte';
+  import {
+    VisualJson,
+    TreeView,
+    FormView,
+    SearchBar,
+  } from "@visual-json/svelte";
 
   let value = $state({});
 </script>
 
-<VisualJson value={value} onchange={(v) => (value = v)}>
+<VisualJson {value} onchange={(v) => (value = v)}>
   <SearchBar />
   <div style="display: flex; height: 400px;">
     <TreeView />
@@ -50,15 +55,15 @@ Pass a JSON Schema to get type-aware editing, enum dropdowns, and required field
 
 ```svelte
 <JsonEditor
-  value={value}
+  {value}
   schema={{
-    type: 'object',
+    type: "object",
     properties: {
-      name: { type: 'string', title: 'Name' },
-      age: { type: 'number', minimum: 0 },
-      role: { type: 'string', enum: ['admin', 'user', 'guest'] }
+      name: { type: "string", title: "Name" },
+      age: { type: "number", minimum: 0 },
+      role: { type: "string", enum: ["admin", "user", "guest"] },
     },
-    required: ['name']
+    required: ["name"],
   }}
   onChange={(v) => (value = v)}
 />

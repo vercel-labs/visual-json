@@ -123,10 +123,7 @@ onUnmounted(() =>
 </script>
 
 <template>
-  <div
-    ref="wrapperRef"
-    :style="{ position: 'relative', flex: 1, minWidth: 0 }"
-  >
+  <div ref="wrapperRef" :style="{ position: 'relative', flex: 1, minWidth: 0 }">
     <input
       ref="inputRef"
       :value="inputValue"
@@ -186,7 +183,9 @@ onUnmounted(() =>
               ? 'var(--vj-text, #cccccc)'
               : 'var(--vj-text-muted, #888888)',
           backgroundColor:
-            i === highlightIndex ? 'var(--vj-bg-hover, #2a2d2e)' : 'transparent',
+            i === highlightIndex
+              ? 'var(--vj-bg-hover, #2a2d2e)'
+              : 'transparent',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           overflow: 'hidden',

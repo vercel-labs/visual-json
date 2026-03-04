@@ -68,7 +68,9 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeyDown));
         outline: 'none',
         minWidth: 0,
       }"
-      @input="(e) => actions.setSearchQuery((e.target as HTMLInputElement).value)"
+      @input="
+        (e) => actions.setSearchQuery((e.target as HTMLInputElement).value)
+      "
       @keydown="handleKeyDown"
     />
     <div
@@ -110,7 +112,8 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeyDown));
               state.searchMatches.value.length > 0
                 ? 'var(--vj-text, #cccccc)'
                 : 'var(--vj-text-dimmer, #555555)',
-            cursor: state.searchMatches.value.length > 0 ? 'pointer' : 'default',
+            cursor:
+              state.searchMatches.value.length > 0 ? 'pointer' : 'default',
             padding: 0,
             fontSize: '10px',
             lineHeight: 1,
@@ -135,7 +138,8 @@ onUnmounted(() => document.removeEventListener("keydown", handleGlobalKeyDown));
               state.searchMatches.value.length > 0
                 ? 'var(--vj-text, #cccccc)'
                 : 'var(--vj-text-dimmer, #555555)',
-            cursor: state.searchMatches.value.length > 0 ? 'pointer' : 'default',
+            cursor:
+              state.searchMatches.value.length > 0 ? 'pointer' : 'default',
             padding: 0,
             fontSize: '10px',
             lineHeight: 1,

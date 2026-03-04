@@ -46,8 +46,8 @@ const isContainer = computed(
   () => props.node.type === "object" || props.node.type === "array",
 );
 const isRoot = computed(() => props.node.parentId === null);
-const isSelected = computed(
-  () => state.selectedNodeIds.value.has(props.node.id),
+const isSelected = computed(() =>
+  state.selectedNodeIds.value.has(props.node.id),
 );
 const isEditing = computed(() => ctx.editingNodeId.value === props.node.id);
 const collapsed = computed(() => ctx.collapsedIds.value.has(props.node.id));
@@ -58,11 +58,7 @@ const parentIsObject = computed(() => {
 });
 
 const propSchema = computed(() =>
-  getResolvedSchema(
-    ctx.schema.value,
-    ctx.rootSchema.value,
-    props.node.path,
-  ),
+  getResolvedSchema(ctx.schema.value, ctx.rootSchema.value, props.node.path),
 );
 
 const isRequired = computed(() =>
@@ -75,8 +71,8 @@ const fieldTitle = computed(() => propSchema.value?.title);
 const isDragTarget = computed(
   () => ctx.dragState.value.dropTargetNodeId === props.node.id,
 );
-const isDraggedNode = computed(
-  () => ctx.dragState.value.draggedNodeIds.has(props.node.id),
+const isDraggedNode = computed(() =>
+  ctx.dragState.value.draggedNodeIds.has(props.node.id),
 );
 
 function getBorderTopColor() {
@@ -136,7 +132,11 @@ function handleDragStart(e: DragEvent) {
 }
 
 function handleValueChange(newValue: string) {
-  const parsed = parseInputValue(newValue, propSchema.value?.type, props.node.type);
+  const parsed = parseInputValue(
+    newValue,
+    propSchema.value?.type,
+    props.node.type,
+  );
   const newTree = setValue(state.tree.value, props.node.id, parsed);
   actions.setTree(newTree);
 }

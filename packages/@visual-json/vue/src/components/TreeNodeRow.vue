@@ -36,8 +36,7 @@ function isExpanded() {
   return state.expandedNodeIds.value.has(props.node.id);
 }
 
-const isContainer =
-  props.node.type === "object" || props.node.type === "array";
+const isContainer = props.node.type === "object" || props.node.type === "array";
 const isRoot = props.node.parentId === null;
 
 function isSearchMatch() {

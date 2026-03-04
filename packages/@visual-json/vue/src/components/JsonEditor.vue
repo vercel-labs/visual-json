@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { shallowRef, computed,watch, onMounted, onUnmounted, type CSSProperties } from "vue";
+import {
+  shallowRef,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  type CSSProperties,
+} from "vue";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
 import { DEFAULT_CSS_VARS } from "@internal/ui";
 import VisualJson from "./VisualJson.vue";
@@ -119,7 +126,7 @@ function handleMouseDown(e: MouseEvent) {
   document.addEventListener("mouseup", handleMouseUp);
 }
 
-const containerStyle  = computed<CSSProperties>(() => ({
+const containerStyle = computed<CSSProperties>(() => ({
   height: typeof props.height === "number" ? `${props.height}px` : props.height,
   width: typeof props.width === "number" ? `${props.width}px` : props.width,
   display: "flex",
@@ -312,8 +319,7 @@ const containerStyle  = computed<CSSProperties>(() => ({
                 if (!dragging) {
                   const parent = (e.currentTarget as HTMLElement).parentElement;
                   if (parent)
-                    parent.style.backgroundColor =
-                      'var(--vj-border, #333333)';
+                    parent.style.backgroundColor = 'var(--vj-border, #333333)';
                 }
               }
             "

@@ -32,10 +32,17 @@ const visibleNodes = computed(() =>
   ),
 );
 
-const { dragState, handleDragStart, handleDragOver, handleDragEnd, handleDrop } =
-  useDragDrop(visibleNodes, state.selectedNodeIds);
+const {
+  dragState,
+  handleDragStart,
+  handleDragOver,
+  handleDragEnd,
+  handleDrop,
+} = useDragDrop(visibleNodes, state.selectedNodeIds);
 
-const contextMenu = shallowRef<{ x: number; y: number; node: TreeNode } | null>(null);
+const contextMenu = shallowRef<{ x: number; y: number; node: TreeNode } | null>(
+  null,
+);
 const isFocused = shallowRef(false);
 
 function handleSelectRange(nodeId: string) {
@@ -102,8 +109,7 @@ function buildContextMenuItems(node: TreeNode): ContextMenuEntry[] {
     label: "Copy value as JSON",
     action: () => {
       const val = toJson(node);
-      const text =
-        typeof val === "string" ? val : JSON.stringify(val, null, 2);
+      const text = typeof val === "string" ? val : JSON.stringify(val, null, 2);
       navigator.clipboard.writeText(text).catch(() => {});
     },
   });
@@ -203,8 +209,7 @@ function handleKeyDown(e: KeyboardEvent) {
       const current =
         currentIndex >= 0 ? visibleNodes.value[currentIndex] : null;
       if (!current) break;
-      const isContainer =
-        current.type === "object" || current.type === "array";
+      const isContainer = current.type === "object" || current.type === "array";
       if (isContainer && state.expandedNodeIds.value.has(current.id)) {
         actions.collapseNode(current.id);
       } else if (current.parentId) {
