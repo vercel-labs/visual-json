@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { setContext, untrack } from 'svelte';
+	import { on } from 'svelte/events';
 	import type { Snippet } from 'svelte';
 	import {
 		fromJson,
@@ -27,9 +28,9 @@
 
 	let { value, schema = null, onchange, children }: Props = $props();
 
+	let hasMounted = false;
 	const internalChangeGuard = createInternalChangeGuard();
-	let syncToken = $state(0);
-	let expectedInternalSyncValue = $state<JsonValue | null>(null);
+	let internalSyncToken = $state(0);
 	const initialTree = (() => fromJson(value))();
 	let tree = $state<TreeState>(initialTree);
 	let focusedNodeId = $state<string | null>(null);
@@ -67,21 +68,24 @@
 		searchMatchIndex = 0;
 	}
 
+	function isSameJsonValue(left: JsonValue, right: JsonValue) {
+		return JSON.stringify(left) === JSON.stringify(right);
+	}
+
 	// Sync external value changes
 	$effect(() => {
+		const token = internalSyncToken;
 		const externalValue = value;
-		const token = untrack(() => syncToken);
+		if (!hasMounted) {
+			hasMounted = true;
+			return;
+		}
 		if (!internalChangeGuard.shouldHandleExternalSync(token)) {
-			if (expectedInternalSyncValue !== null) {
-				const expected = expectedInternalSyncValue;
-				expectedInternalSyncValue = null;
-				if (
-					Object.is(externalValue, expected) ||
-					JSON.stringify(externalValue) === JSON.stringify(expected)
-				) {
-					return;
-				}
-			}
+			return;
+		}
+		const currentValue = toJson(tree.root);
+		if (isSameJsonValue(currentValue, externalValue)) {
+			return;
 		}
 		resetFromExternalValue(externalValue);
 	});
@@ -96,18 +100,12 @@
 		searchMatchIndex = Math.min(untrack(() => searchMatchIndex), Math.max(matches.length - 1, 0));
 	});
 
-	function emitInternalChange(nextTree: TreeState) {
-		const nextValue = toJson(nextTree.root);
-		expectedInternalSyncValue = nextValue;
-		syncToken = internalChangeGuard.markInternal();
-		onchange?.(nextValue);
-	}
-
 	function setTree(newTree: TreeState) {
 		tree = newTree;
 		history.push(newTree);
 		historyVersion++;
-		emitInternalChange(newTree);
+		internalSyncToken = internalChangeGuard.markInternal();
+		onchange?.(toJson(newTree.root));
 	}
 
 	function undo() {
@@ -115,7 +113,8 @@
 		if (prev) {
 			tree = prev;
 			historyVersion++;
-			emitInternalChange(prev);
+			internalSyncToken = internalChangeGuard.markInternal();
+			onchange?.(toJson(prev.root));
 		}
 	}
 
@@ -124,7 +123,8 @@
 		if (next) {
 			tree = next;
 			historyVersion++;
-			emitInternalChange(next);
+			internalSyncToken = internalChangeGuard.markInternal();
+			onchange?.(toJson(next.root));
 		}
 	}
 
@@ -143,8 +143,7 @@
 	}
 
 	$effect(() => {
-		document.addEventListener('keydown', handleKeyDown);
-		return () => document.removeEventListener('keydown', handleKeyDown);
+		return on(document, 'keydown', handleKeyDown);
 	});
 
 	const visibleNodes = $derived(getVisibleNodes(tree.root, (id) => expandedNodeIds.has(id)));

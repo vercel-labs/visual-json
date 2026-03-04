@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { JsonValue, JsonSchema } from '@visual-json/core';
 	import { DEFAULT_CSS_VARS } from '@internal/ui';
+	import { on } from 'svelte/events';
 	import VisualJson from './VisualJson.svelte';
 	import TreeView from './TreeView.svelte';
 	import FormView from './FormView.svelte';
@@ -70,8 +71,8 @@
 	let isDragging = $state(false);
 	let startX = 0;
 	let startWidth = 0;
-	let dragMoveHandler: ((event: MouseEvent) => void) | null = null;
-	let dragUpHandler: (() => void) | null = null;
+	let removeDragMoveListener: (() => void) | null = null;
+	let removeDragUpListener: (() => void) | null = null;
 
 	function checkWidth() {
 		if (containerRef) {
@@ -88,13 +89,13 @@
 	});
 
 	function stopDragging() {
-		if (dragMoveHandler) {
-			document.removeEventListener('mousemove', dragMoveHandler);
-			dragMoveHandler = null;
+		if (removeDragMoveListener) {
+			removeDragMoveListener();
+			removeDragMoveListener = null;
 		}
-		if (dragUpHandler) {
-			document.removeEventListener('mouseup', dragUpHandler);
-			dragUpHandler = null;
+		if (removeDragUpListener) {
+			removeDragUpListener();
+			removeDragUpListener = null;
 		}
 		isDragging = false;
 		document.body.style.cursor = '';
@@ -111,16 +112,13 @@
 		document.body.style.cursor = 'col-resize';
 		document.body.style.userSelect = 'none';
 
-		dragMoveHandler = (ev: MouseEvent) => {
+		const handleMouseMove = (ev: MouseEvent) => {
 			if (!isDragging) return;
 			const delta = ev.clientX - startX;
 			sidebarWidth = Math.max(180, Math.min(600, startWidth + delta));
 		};
-
-		dragUpHandler = stopDragging;
-
-		document.addEventListener('mousemove', dragMoveHandler);
-		document.addEventListener('mouseup', dragUpHandler);
+		removeDragMoveListener = on(document, 'mousemove', handleMouseMove);
+		removeDragUpListener = on(document, 'mouseup', stopDragging);
 	}
 
 	const containerStyle = $derived.by(() => {

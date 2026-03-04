@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { useStudio } from '../use-studio.js';
+	import { on } from 'svelte/events';
 
 	interface Props {
 		class?: string;
@@ -59,8 +60,7 @@
 	});
 
 	$effect(() => {
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
+		return on(document, 'mousedown', handleClickOutside);
 	});
 
 	function navigateTo(path: string) {
@@ -160,7 +160,7 @@
 				box-shadow: 0 4px 12px rgba(0,0,0,0.3);
 			"
 		>
-			{#each suggestions as s, i}
+			{#each suggestions as s, i (s.id)}
 				<div
 					role="option"
 					aria-selected={i === highlightIndex}

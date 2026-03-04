@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { tick } from 'svelte';
 	import { Portal } from '@jsrob/svelte-portal';
+	import { on } from 'svelte/events';
 
 	export interface ContextMenuItem {
 		label: string;
@@ -48,19 +49,18 @@
 	});
 
 	$effect(() => {
-		function handleClick(e: MouseEvent) {
+		const cleanMousedown = on(document, 'mousedown', (e) => {
 			if (menuRef && !menuRef.contains(e.target as Node)) {
 				onclose?.();
 			}
-		}
-		function handleKey(e: KeyboardEvent) {
-			if (e.key === 'Escape') onclose?.();
-		}
-		document.addEventListener('mousedown', handleClick);
-		document.addEventListener('keydown', handleKey);
+		})
+		const cleanKeydown = on(document, 'keydown', (e) => {
+		  if (e.key === 'Escape') onclose?.();
+		})
+
 		return () => {
-			document.removeEventListener('mousedown', handleClick);
-			document.removeEventListener('keydown', handleKey);
+			cleanMousedown();
+			cleanKeydown();
 		};
 	});
 </script>

@@ -24,6 +24,12 @@
 
 	const ctx = getContext<FormViewContext>(FORM_VIEW_KEY);
 	const { state: studioState, actions } = useStudio();
+	type DebugWindow = Window & { __VJ_DEBUG_EDIT__?: boolean };
+	function debugEdit(event: string, details: Record<string, unknown> = {}) {
+		if (typeof window === 'undefined') return;
+		if (!(window as DebugWindow).__VJ_DEBUG_EDIT__) return;
+		console.log('[vj-edit][FormField]', event, details);
+	}
 
 	let hovered = $state(false);
 	let valueInputRef = $state<EnumInput | HTMLInputElement | null>(null);
@@ -136,17 +142,21 @@
 
 	// Focus appropriate input when editing starts
 	$effect(() => {
+		debugEdit('is-editing-changed', { nodeId: node.id, isEditing });
 		if (!isEditing) return;
 		tick().then(() => {
 			if (!isContainer) {
 				const hasValue =
 					node.value !== null && node.value !== undefined && node.value !== '';
 				if (hasValue && valueInputRef) {
+					debugEdit('focus-value-input', { nodeId: node.id });
 					focusValueInput();
 				} else if (keyInputRef) {
+					debugEdit('focus-key-input', { nodeId: node.id, branch: 'leaf' });
 					keyInputRef.focus();
 				}
 			} else if (keyInputRef) {
+				debugEdit('focus-key-input', { nodeId: node.id, branch: 'container' });
 				keyInputRef.focus();
 			}
 		});
@@ -375,7 +385,11 @@
 					outline: none;
 					width: {keyWidth};
 				"
-				oninput={(e) => handleKeyChange((e.target as HTMLInputElement).value)}
+				oninput={(e) => {
+					const value = (e.target as HTMLInputElement).value;
+					debugEdit('key-input-change', { nodeId: node.id, value });
+					handleKeyChange(value);
+				}}
 				onclick={(e) => e.stopPropagation()}
 				onkeydown={(e) => {
 					if (e.key === 'Tab' && !e.shiftKey && valueInputRef) {
@@ -422,7 +436,10 @@
 							outline: 'none',
 							color: getValueColor()
 						}}
-						onvaluechange={handleValueChange}
+						onvaluechange={(val) => {
+							debugEdit('value-input-change', { nodeId: node.id, value: val, kind: 'boolean' });
+							handleValueChange(val);
+						}}
 					/>
 				{:else if hasEnumValues && propSchema?.enum}
 					<EnumInput
@@ -439,7 +456,10 @@
 							outline: 'none',
 							color: getValueColor()
 						}}
-						onvaluechange={handleValueChange}
+						onvaluechange={(val) => {
+							debugEdit('value-input-change', { nodeId: node.id, value: val, kind: 'enum' });
+							handleValueChange(val);
+						}}
 					/>
 				{:else if node.type === 'null'}
 					<span
@@ -470,7 +490,11 @@
 							outline: none;
 							color: {getValueColor()};
 						"
-						oninput={(e) => handleValueChange((e.target as HTMLInputElement).value)}
+						oninput={(e) => {
+							const value = (e.target as HTMLInputElement).value;
+							debugEdit('value-input-change', { nodeId: node.id, value, kind: node.type });
+							handleValueChange(value);
+						}}
 						onclick={(e) => e.stopPropagation()}
 					/>
 				{/if}

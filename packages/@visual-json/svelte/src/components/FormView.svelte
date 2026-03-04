@@ -18,22 +18,33 @@
 	let { class: className, showDescriptions = false, showCounts = false }: Props = $props();
 
 	const { state: studioState, actions } = useStudio();
+	type DebugWindow = Window & { __VJ_DEBUG_EDIT__?: boolean };
+	function debugEdit(event: string, details: Record<string, unknown> = {}) {
+		if (typeof window === 'undefined') return;
+		if (!(window as DebugWindow).__VJ_DEBUG_EDIT__) return;
+		console.log('[vj-edit][FormView]', event, details);
+	}
 
 	let containerRef = $state<HTMLDivElement | null>(null);
 	let isFocused = $state(false);
 	let editingNodeId = $state<string | null>(null);
 	let collapsedIds = $state<Set<string>>(new Set());
 	let preEditTree = studioState.tree;
+	let lastDisplayNodeId = $state<string | null>(null);
 
-	const displayNode = $derived(
-		(studioState.drillDownNodeId
-			? studioState.tree.nodesById.get(studioState.drillDownNodeId)
-			: null) ?? studioState.tree.root
-	);
+	const displayNodeId = $derived(studioState.drillDownNodeId ?? studioState.tree.root.id);
+	const displayNode = $derived(studioState.tree.nodesById.get(displayNodeId) ?? studioState.tree.root);
 
 	// Reset form state when display node changes
 	$effect(() => {
-		displayNode.id;
+		const currentDisplayNodeId = displayNodeId;
+		if (lastDisplayNodeId === currentDisplayNodeId) return;
+		debugEdit('display-node-changed-reset', {
+			prevDisplayNodeId: lastDisplayNodeId,
+			nextDisplayNodeId: currentDisplayNodeId,
+			editingNodeId
+		});
+		lastDisplayNodeId = currentDisplayNodeId;
 		editingNodeId = null;
 		collapsedIds = new Set();
 	});
@@ -75,6 +86,13 @@
 	const rootSchema = $derived<JsonSchemaProperty | undefined>(studioState.schema ?? undefined);
 
 	function onSelect(nodeId: string, e: MouseEvent) {
+		containerRef?.focus();
+		debugEdit('select-node', {
+			nodeId,
+			shift: e.shiftKey,
+			mod: e.metaKey || e.ctrlKey,
+			wasEditingNodeId: editingNodeId
+		});
 		editingNodeId = null;
 		if (e.shiftKey) {
 			actions.setVisibleNodesOverride(visibleNodes);
@@ -96,6 +114,7 @@
 	function onStartEditing(nodeId: string) {
 		preEditTree = studioState.tree;
 		editingNodeId = nodeId;
+		debugEdit('start-editing', { nodeId, focusedNodeId: studioState.focusedNodeId });
 	}
 
 	function scrollToNode(nodeId: string) {
@@ -107,16 +126,19 @@
 
 	function handleKeyDown(e: KeyboardEvent) {
 		if (editingNodeId) {
+			debugEdit('editing-keydown', { key: e.key, editingNodeId });
 			if (e.key === 'Escape') {
 				e.preventDefault();
 				e.stopPropagation();
 				actions.setTree(preEditTree);
 				editingNodeId = null;
+				debugEdit('exit-editing-escape', { focusedNodeId: studioState.focusedNodeId });
 				containerRef?.focus();
 			} else if (e.key === 'Enter') {
 				e.preventDefault();
 				e.stopPropagation();
 				editingNodeId = null;
+				debugEdit('exit-editing-enter', { focusedNodeId: studioState.focusedNodeId });
 				containerRef?.focus();
 			}
 			return;
@@ -292,10 +314,17 @@
 		tabindex="0"
 		style="flex: 1; overflow: auto; outline: none;"
 		onkeydown={handleKeyDown}
-		onfocus={() => (isFocused = true)}
+		onfocus={() => {
+			isFocused = true;
+			debugEdit('form-focused', { focusedNodeId: studioState.focusedNodeId, editingNodeId });
+		}}
 		onblur={(e) => {
 			if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
 				isFocused = false;
+				debugEdit('form-blurred', {
+					relatedTargetTag: (e.relatedTarget as HTMLElement | null)?.tagName ?? null,
+					editingNodeId
+				});
 			}
 		}}
 	>

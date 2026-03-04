@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { tick } from 'svelte';
+	import { on } from 'svelte/events';
 	import type { JsonValue } from '@visual-json/core';
 
 	interface Props {
@@ -43,8 +44,7 @@
 	});
 
 	$effect(() => {
-		document.addEventListener('mousedown', handleClickOutside);
-		return () => document.removeEventListener('mousedown', handleClickOutside);
+		return on(document, 'mousedown', handleClickOutside);
 	});
 
 	function selectValue(val: string) {

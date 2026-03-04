@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { useStudio } from '../use-studio.js';
+	import { on } from 'svelte/events';
 
 	interface Props {
 		class?: string;
@@ -35,8 +36,7 @@
 				inputRef?.select();
 			}
 		}
-		document.addEventListener('keydown', handleGlobalKeyDown);
-		return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+		return on(document, 'keydown', handleGlobalKeyDown);
 	});
 </script>
 
