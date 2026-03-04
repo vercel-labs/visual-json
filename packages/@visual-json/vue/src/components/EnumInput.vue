@@ -164,9 +164,7 @@ defineExpose({ focus: () => localInputRef.value?.focus() });
               ? 'var(--vj-text, #cccccc)'
               : 'var(--vj-text-muted, #888888)',
           backgroundColor:
-            i === highlightIndex
-              ? 'var(--vj-bg-hover, #2a2d2e)'
-              : 'transparent',
+            i === highlightIndex ? 'var(--vj-bg-hover, #2a2d2e)' : 'transparent',
           cursor: 'pointer',
           whiteSpace: 'nowrap',
           overflow: 'hidden',

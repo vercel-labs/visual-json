@@ -1,12 +1,5 @@
 <script setup lang="ts">
-import {
-  shallowRef,
-  computed,
-  watch,
-  onMounted,
-  onUnmounted,
-  provide,
-} from "vue";
+import { shallowRef, computed, watch, onMounted, onUnmounted, provide } from "vue";
 import {
   fromJson,
   toJson,
