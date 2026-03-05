@@ -7,5 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@visual-json/web", "@visual-json/example-react", "@visual-json/example-vue"]
+  "ignore": ["@visual-json/web", "@visual-json/example-react", "@visual-json/example-vue", "@visual-json/example-svelte"]
 }

@@ -10,7 +10,7 @@
   interface Props {
     value?: JsonValue;
     defaultValue?: JsonValue;
-    onChange?: (value: JsonValue) => void;
+    onchange?: (value: JsonValue) => void;
     schema?: JsonSchema | null;
     height?: string | number;
     width?: string | number;
@@ -27,7 +27,7 @@
   let {
     value: valueProp,
     defaultValue,
-    onChange,
+    onchange,
     schema = null,
     height = "100%",
     width = "100%",
@@ -59,7 +59,7 @@
   function handleChange(newValue: JsonValue) {
     currentValue = newValue;
     if (!readOnly) {
-      onChange?.(newValue);
+      onchange?.(newValue);
     }
   }
 

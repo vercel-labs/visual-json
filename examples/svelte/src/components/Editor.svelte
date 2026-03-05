@@ -270,7 +270,7 @@
         editorShowCounts={editorShowCounts}
         sidebarOpen={sidebarOpen}
         height="100%"
-        onChange={doc.handleJsonChange}
+        onchange={doc.handleJsonChange}
       />
     {/if}
   </div>

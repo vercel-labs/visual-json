@@ -21,7 +21,7 @@ The simplest way to embed a full JSON editor with tree view, form view, search, 
   let value = $state({ name: "Alice", age: 30 });
 </script>
 
-<JsonEditor {value} onChange={(v) => (value = v)} height="500px" />
+<JsonEditor {value} onchange={(v) => (value = v)} height="500px" />
 ```
 
 ### Composing individual panels
@@ -65,7 +65,7 @@ Pass a JSON Schema to get type-aware editing, enum dropdowns, and required field
     },
     required: ["name"],
   }}
-  onChange={(v) => (value = v)}
+  onchange={(v) => (value = v)}
 />
 ```
 
@@ -143,7 +143,7 @@ Pass a JSON Schema to get type-aware editing, enum dropdowns, and required field
       <td>Uncontrolled initial value</td>
     </tr>
     <tr>
-      <td><code>onChange</code></td>
+      <td><code>onchange</code></td>
       <td><code>(value: JsonValue) =&gt; void</code></td>
       <td>—</td>
       <td>Called when value changes</td>
