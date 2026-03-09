@@ -6,7 +6,8 @@
   "scripts": {
     "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
     "postpack": "node ../../../scripts/restore-package-json.mjs",
-    "build": "svelte-package --input ./src --output ./dist",
+    "build": "svelte-package -i ./src -o ./dist",
+    "dev": "svelte-package -i src -o dist --watch",
     "check-types": "svelte-check --tsconfig ./tsconfig.json",
     "lint": "eslint .",
     "format": "prettier --write ."
