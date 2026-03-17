@@ -215,7 +215,7 @@ All components read CSS custom properties for colors, fonts, and spacing. Overri
 />
 ```
 
-See the [default variable list](src/components/JsonEditor.vue) for all available tokens.
+See the [default variable list](/packages/@internal/ui/src/theme.ts) for all available tokens.
 
 ## License
 
