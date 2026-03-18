@@ -56,3 +56,5 @@ export {
   type DiffEntry,
   type DiffType,
 } from "./diff";
+
+export { fromYaml, toYaml, jsonValueToYaml, yamlToJsonValue } from "./yaml";

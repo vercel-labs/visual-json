@@ -31,7 +31,8 @@ export function activate(context: vscode.ExtensionContext) {
       if (
         activeEditor &&
         (activeEditor.document.languageId === "json" ||
-          activeEditor.document.languageId === "jsonc")
+          activeEditor.document.languageId === "jsonc" ||
+          activeEditor.document.languageId === "yaml")
       ) {
         vscode.commands.executeCommand(
           "vscode.openWith",
@@ -40,7 +41,7 @@ export function activate(context: vscode.ExtensionContext) {
         );
       } else {
         vscode.window.showInformationMessage(
-          "Open a JSON file first to use visual-json.",
+          "Open a JSON or YAML file first to use visual-json.",
         );
       }
     }),

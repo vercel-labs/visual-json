@@ -17,6 +17,36 @@ const KNOWN_SCHEMAS: Record<string, string> = {
   "nest-cli.json": "https://json.schemastore.org/nest-cli",
   "vercel.json": "https://openapi.vercel.sh/vercel.json",
   ".swcrc": "https://json.schemastore.org/swcrc",
+
+  // YAML
+  "docker-compose.yml": "https://json.schemastore.org/docker-compose.json",
+  "docker-compose.yaml": "https://json.schemastore.org/docker-compose.json",
+  ".gitlab-ci.yml": "https://json.schemastore.org/gitlab-ci.json",
+  "mkdocs.yml": "https://json.schemastore.org/mkdocs-1.0.json",
+  ".pre-commit-config.yaml":
+    "https://json.schemastore.org/pre-commit-config.json",
+  "pubspec.yaml": "https://json.schemastore.org/pubspec.json",
+  ".eslintrc.yml": "https://json.schemastore.org/eslintrc.json",
+  ".eslintrc.yaml": "https://json.schemastore.org/eslintrc.json",
+  ".prettierrc.yml": "https://json.schemastore.org/prettierrc.json",
+  ".prettierrc.yaml": "https://json.schemastore.org/prettierrc.json",
+  ".travis.yml": "https://json.schemastore.org/travis.json",
+  "appveyor.yml": "https://json.schemastore.org/appveyor.json",
+  "cloudbuild.yaml": "https://json.schemastore.org/cloudbuild.json",
+  "serverless.yml": "https://json.schemastore.org/serverlessframework.json",
+  "serverless.yaml": "https://json.schemastore.org/serverlessframework.json",
+  "pnpm-workspace.yaml": "https://json.schemastore.org/pnpm-workspace.json",
+};
+
+const KNOWN_YAML_GLOBS: Record<string, string> = {
+  ".github/workflows/*.yml":
+    "https://json.schemastore.org/github-workflow.json",
+  ".github/workflows/*.yaml":
+    "https://json.schemastore.org/github-workflow.json",
+  ".github/actions/*/action.yml":
+    "https://json.schemastore.org/github-action.json",
+  ".github/actions/*/action.yaml":
+    "https://json.schemastore.org/github-action.json",
 };
 
 const MAX_SCHEMA_CACHE = 50;
@@ -61,6 +91,16 @@ export async function resolveSchema(
     const knownUrl = KNOWN_SCHEMAS[base];
     if (knownUrl) {
       return fetchSchema(knownUrl);
+    }
+
+    // Glob patterns for YAML files (e.g. .github/workflows/*.yml)
+    for (const [pattern, url] of Object.entries(KNOWN_YAML_GLOBS)) {
+      const regex = new RegExp(
+        "^" + pattern.replace(/\*/g, "[^/]+").replace(/\//g, "\\/") + "$",
+      );
+      if (regex.test(filename)) {
+        return fetchSchema(url);
+      }
     }
   }
 

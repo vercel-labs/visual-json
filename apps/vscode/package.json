@@ -29,6 +29,12 @@
           },
           {
             "filenamePattern": "*.jsonc"
+          },
+          {
+            "filenamePattern": "*.yaml"
+          },
+          {
+            "filenamePattern": "*.yml"
           }
         ],
         "priority": "option"
@@ -40,7 +46,7 @@
           "type": "webview",
           "id": "visualJson.panel",
           "name": "visual-json",
-          "when": "resourceLangId == json || resourceLangId == jsonc"
+          "when": "resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml"
         }
       ]
     },
@@ -62,7 +68,8 @@
   "dependencies": {
     "@visual-json/core": "workspace:*",
     "@visual-json/react": "workspace:*",
-    "jsonc-parser": "^3.3.1"
+    "jsonc-parser": "^3.3.1",
+    "yaml": "^2.7.1"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

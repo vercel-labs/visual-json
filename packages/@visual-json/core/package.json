@@ -35,6 +35,7 @@
   },
   "devDependencies": {
     "tsup": "^8.5.1",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "yaml": "^2.8.2"
   }
 }

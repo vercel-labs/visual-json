@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { resolveSchema } from "@visual-json/core";
 import { parse as parseJsonc } from "jsonc-parser";
+import { parse as parseYaml } from "yaml";
 import {
   getWebviewHtml,
   type HostToWebviewMessage,
@@ -55,7 +56,11 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
           }
           case "requestSchema": {
             try {
-              const parsed = parseJsonc(msg.json);
+              const isYaml =
+                msg.filename.endsWith(".yaml") || msg.filename.endsWith(".yml");
+              const parsed = isYaml
+                ? parseYaml(msg.json)
+                : parseJsonc(msg.json);
               const schema = await resolveSchema(parsed, msg.filename);
               const result: HostToWebviewMessage = {
                 type: "schemaResult",
@@ -109,7 +114,8 @@ export class VisualJsonPanelProvider implements vscode.WebviewViewProvider {
     if (
       !editor ||
       (editor.document.languageId !== "json" &&
-        editor.document.languageId !== "jsonc")
+        editor.document.languageId !== "jsonc" &&
+        editor.document.languageId !== "yaml")
     ) {
       this.currentDocumentUri = undefined;
       return;
