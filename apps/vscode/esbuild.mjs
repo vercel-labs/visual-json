@@ -10,6 +10,7 @@ const isWatch = process.argv.includes("--watch");
 const workspaceAliases = {
   "@visual-json/core": path.resolve(__dirname, "../../packages/@visual-json/core/src/index.ts"),
   "@visual-json/react": path.resolve(__dirname, "../../packages/@visual-json/react/src/index.ts"),
+  "@visual-json/yaml": path.resolve(__dirname, "../../packages/@visual-json/yaml/src/index.ts"),
 };
 
 /** @type {import('esbuild').BuildOptions} */

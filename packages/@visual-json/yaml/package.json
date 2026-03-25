@@ -1,14 +1,12 @@
 {
-  "name": "@visual-json/core",
-  "version": "0.3.1",
+  "name": "@visual-json/yaml",
+  "version": "0.0.1",
   "license": "Apache-2.0",
-  "description": "Headless core for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
+  "description": "YAML support for visual-json — parse, serialize, and schema-detect YAML files.",
   "keywords": [
-    "json",
+    "yaml",
     "editor",
-    "tree",
-    "schema",
-    "visual"
+    "visual-json"
   ],
   "publishConfig": {
     "access": "public"
@@ -32,6 +30,10 @@
     "check-types": "tsc --noEmit",
     "lint": "eslint .",
     "format": "prettier --write \"**/*.{ts,tsx}\""
+  },
+  "dependencies": {
+    "@visual-json/core": "workspace:*",
+    "yaml": "^2.7.1"
   },
   "devDependencies": {
     "tsup": "^8.5.1",

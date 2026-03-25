@@ -8,12 +8,12 @@ import {
 import type { JsonValue, JsonSchema } from "@visual-json/core";
 import { JsonEditor } from "@visual-json/react";
 import { parse as parseJsonc } from "jsonc-parser";
-import { parse as parseYaml, stringify as stringifyYaml } from "yaml";
+import {
+  isYamlFile,
+  parseYamlContent,
+  stringifyYamlContent,
+} from "@visual-json/yaml";
 import { vscode } from "./vscode";
-
-function isYamlFile(filename: string): boolean {
-  return filename.endsWith(".yaml") || filename.endsWith(".yml");
-}
 
 const VSCODE_THEME_STYLE: CSSProperties = {
   "--vj-bg": "var(--vscode-editor-background, #1e1e1e)",
@@ -87,7 +87,7 @@ export function App() {
             lastJsonRef.current = msg.json;
             filenameRef.current = msg.filename;
             const parsed = isYamlFile(msg.filename)
-              ? parseYaml(msg.json)
+              ? parseYamlContent(msg.json)
               : parseJsonc(msg.json);
             setJsonValue(parsed);
             setParseError(null);
@@ -123,7 +123,7 @@ export function App() {
     if (editTimerRef.current !== null) clearTimeout(editTimerRef.current);
     editTimerRef.current = setTimeout(() => {
       const json = isYamlFile(filenameRef.current)
-        ? stringifyYaml(value, { lineWidth: 0 })
+        ? stringifyYamlContent(value)
         : JSON.stringify(value, null, 2);
       lastJsonRef.current = json;
       suppressEditRef.current = true;
