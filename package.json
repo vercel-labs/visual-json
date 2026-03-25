@@ -35,7 +35,7 @@
     "node": ">=18"
   },
   "lint-staged": {
-    "*.{ts,tsx}": "prettier --write"
+    "*.{ts,tsx,svelte,vue}": "prettier --write"
   },
   "prettier": {
     "plugins": [

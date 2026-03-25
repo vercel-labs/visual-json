@@ -247,7 +247,7 @@
 							display: flex;
 							flex-direction: column;
 							width: {sidebarOpen ? sidebarWidth + 'px' : '0'};
-						transition: {isDragging ? 'none' : 'width 0.2s ease'};
+							transition: {isDragging ? 'none' : 'width 0.2s ease'};
 						"
         >
           <SearchBar />
