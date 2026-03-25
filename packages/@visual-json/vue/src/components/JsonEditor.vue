@@ -71,7 +71,7 @@ const sidebarWidth = shallowRef(280);
 const isNarrow = shallowRef(false);
 const activePanel = shallowRef<"tree" | "form">("tree");
 const containerRef = shallowRef<HTMLDivElement | null>(null);
-let dragging = false;
+const isDragging = shallowRef(false);
 let startX = 0;
 let startWidth = 0;
 let observer: ResizeObserver | null = null;
@@ -95,20 +95,20 @@ onUnmounted(() => {
 });
 
 function handleMouseDown(e: MouseEvent) {
-  dragging = true;
+  isDragging.value = true;
   startX = e.clientX;
   startWidth = sidebarWidth.value;
   document.body.style.cursor = "col-resize";
   document.body.style.userSelect = "none";
 
   function handleMouseMove(ev: MouseEvent) {
-    if (!dragging) return;
+    if (!isDragging.value) return;
     const delta = ev.clientX - startX;
     sidebarWidth.value = Math.max(180, Math.min(600, startWidth + delta));
   }
 
   function handleMouseUp() {
-    dragging = false;
+    isDragging.value = false;
     document.body.style.cursor = "";
     document.body.style.userSelect = "";
     document.removeEventListener("mousemove", handleMouseMove);
@@ -267,7 +267,7 @@ const containerStyle  = computed<CSSProperties>(() => ({
             display: 'flex',
             flexDirection: 'column',
             width: props.sidebarOpen ? sidebarWidth + 'px' : '0',
-            transition: 'width 0.2s ease',
+            transition: isDragging ? 'none' : 'width 0.2s ease',
           }"
         >
           <SearchBar />
@@ -309,7 +309,7 @@ const containerStyle  = computed<CSSProperties>(() => ({
             "
             @mouseleave="
               (e) => {
-                if (!dragging) {
+                if (!isDragging) {
                   const parent = (e.currentTarget as HTMLElement).parentElement;
                   if (parent)
                     parent.style.backgroundColor =

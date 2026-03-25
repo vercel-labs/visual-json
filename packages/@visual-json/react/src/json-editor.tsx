@@ -118,6 +118,7 @@ function EditorLayout({
   sidebarOpen: boolean;
 }) {
   const [sidebarWidth, setSidebarWidth] = useState(280);
+  const [isDragging, setIsDragging] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
   const [activePanel, setActivePanel] = useState<"tree" | "form">("tree");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -140,6 +141,7 @@ function EditorLayout({
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       dragging.current = true;
+      setIsDragging(true);
       startX.current = e.clientX;
       startWidth.current = sidebarWidth;
       document.body.style.cursor = "col-resize";
@@ -157,6 +159,7 @@ function EditorLayout({
 
       const handleMouseUp = () => {
         dragging.current = false;
+        setIsDragging(false);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
         document.removeEventListener("mousemove", handleMouseMove);
@@ -299,7 +302,7 @@ function EditorLayout({
           display: "flex",
           flexDirection: "column",
           width: sidebarOpen ? sidebarWidth : 0,
-          transition: "width 0.2s ease",
+          transition: isDragging ? "none" : "width 0.2s ease",
         }}
       >
         <SearchBar />
