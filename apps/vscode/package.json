@@ -15,7 +15,8 @@
   ],
   "activationEvents": [
     "onCustomEditor:visualJson.editor",
-    "onView:visualJson.panel"
+    "onView:visualJson.panel",
+    "onCommand:visualJson.openWithVisualJson"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -46,7 +47,7 @@
           "type": "webview",
           "id": "visualJson.panel",
           "name": "visual-json",
-          "when": "resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml"
+          "when": "resourceLangId == json || resourceLangId == jsonc || resourceLangId == yaml || resourceLangId == dockercompose || resourceLangId == github-actions-workflow || resourceLangId == home-assistant"
         }
       ]
     },

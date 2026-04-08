@@ -28,11 +28,17 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand("visualJson.openWithVisualJson", () => {
       const activeEditor = vscode.window.activeTextEditor;
+      const yamlLike = new Set([
+        "yaml",
+        "dockercompose",
+        "github-actions-workflow",
+        "home-assistant",
+      ]);
       if (
         activeEditor &&
         (activeEditor.document.languageId === "json" ||
           activeEditor.document.languageId === "jsonc" ||
-          activeEditor.document.languageId === "yaml")
+          yamlLike.has(activeEditor.document.languageId))
       ) {
         vscode.commands.executeCommand(
           "vscode.openWith",

@@ -24,6 +24,7 @@ const extensionConfig = {
   target: "node18",
   sourcemap: !isProduction,
   minify: isProduction,
+  mainFields: ["module", "main"],
   alias: workspaceAliases,
 };
 
