@@ -17,7 +17,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "portless visual-json --no-tls -p 1355 next dev --turbopack",
+    command:
+      "portless proxy start --no-tls -p 1355 && portless visual-json next dev --turbopack",
     url: "http://visual-json.localhost:1355",
     reuseExistingServer: !process.env.CI,
   },
