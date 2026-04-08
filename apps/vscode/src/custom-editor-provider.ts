@@ -1,11 +1,7 @@
 import * as vscode from "vscode";
 import { resolveSchema } from "@visual-json/core";
 import { parse as parseJsonc } from "jsonc-parser";
-import {
-  isYamlFile,
-  parseYamlContent,
-  stringifyYamlContent,
-} from "@visual-json/yaml";
+import { isYamlFile, parseYamlContent } from "@visual-json/yaml";
 import {
   getWebviewHtml,
   type HostToWebviewMessage,
