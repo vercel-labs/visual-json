@@ -52,6 +52,21 @@ When adding a new example that runs a dev server, wrap its `dev` script with `po
 
 Do **not** add `--port` flags -- portless handles port assignment automatically. Do **not** add portless as a project dependency; it must be installed globally.
 
+## Releasing
+
+Releases are manual, single-PR affairs. There is no changesets automation. The maintainer controls the changelog voice and format.
+
+To prepare a release:
+
+1. Create a branch (e.g. `prepare-v0.5.0`)
+2. Bump `version` in `packages/@visual-json/core/package.json`
+3. Run `pnpm version:sync` to update all other `@visual-json/*` packages
+4. Write the changelog entry in `CHANGELOG.md` at the top, under a new `## <version>` heading, wrapped in `<!-- release:start -->` and `<!-- release:end -->` markers. Remove the markers from the previous release entry so only the new release has markers.
+5. Add a matching entry to `apps/web/src/app/docs/changelog/page.mdx` at the top (below the `# Changelog` heading)
+6. Open a PR and merge to `main`
+
+When the PR merges, CI compares `packages/@visual-json/core/package.json` version to what's on npm. If it differs, it builds, publishes all `@visual-json/*` packages, and creates the GitHub release automatically. The GitHub release body is extracted from the content between the `<!-- release:start -->` and `<!-- release:end -->` markers in `CHANGELOG.md`.
+
 ## Documentation
 
 Use HTML `<table>` elements for tables in all documentation files (README.md, MDX docs). Do not use markdown pipe tables.

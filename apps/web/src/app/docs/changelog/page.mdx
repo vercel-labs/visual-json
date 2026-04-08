@@ -8,6 +8,15 @@ export { metadata } from "./metadata";
 
 - **YAML support** — new `@visual-json/yaml` package for parsing, serializing, and round-tripping YAML through the visual-json tree model. The VS Code extension now opens `.yaml` and `.yml` files with the same tree and form views used for JSON.
 - **YAML schema detection** — `resolveSchema` in `@visual-json/core` now recognizes well-known YAML filenames (`docker-compose.yml`, `.gitlab-ci.yml`, `pnpm-workspace.yaml`, etc.) and glob patterns (`.github/workflows/*.yml`, `.github/actions/*/action.yml`) for automatic schema-aware editing.
+- **Svelte support** — new `@visual-json/svelte` package with Svelte 5 components mirroring the React and Vue packages.
+
+### Improvements
+
+- **Smoother sidebar resize** — sidebar resizing is now more responsive and fluid.
+
+### Fixes
+
+- Fixed React and Vue README links not pointing to the default variable list.
 
 ---
 

@@ -12,12 +12,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "changeset": "changeset",
-    "ci:version": "changeset version && pnpm install --no-frozen-lockfile",
-    "ci:publish": "pnpm run build && changeset publish"
+    "version:sync": "node scripts/sync-version.mjs"
   },
   "devDependencies": {
-    "@changesets/cli": "2.29.8",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.0.1",
     "eslint-plugin-svelte": "^3.15.0",

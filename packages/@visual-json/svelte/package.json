@@ -1,8 +1,11 @@
 {
   "name": "@visual-json/svelte",
-  "version": "0.0.0",
+  "version": "0.4.0",
   "license": "Apache-2.0",
   "description": "Svelte components for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
     "postpack": "node ../../../scripts/restore-package-json.mjs",

@@ -1,0 +1,90 @@
+# Changelog
+
+## 0.4.0
+
+<!-- release:start -->
+### New Features
+
+- **YAML support** — New `@visual-json/yaml` package for parsing, serializing, and round-tripping YAML through the visual-json tree model. The VS Code extension now opens `.yaml` and `.yml` files with the same tree and form views used for JSON (#29)
+- **YAML schema detection** — `resolveSchema` in `@visual-json/core` now recognizes well-known YAML filenames (`docker-compose.yml`, `.gitlab-ci.yml`, `pnpm-workspace.yaml`, etc.) and glob patterns (`.github/workflows/*.yml`, `.github/actions/*/action.yml`) for automatic schema-aware editing (#29)
+- **Svelte support** — New `@visual-json/svelte` package with Svelte 5 components mirroring the React and Vue packages (#24)
+
+### Improvements
+
+- **Smoother sidebar resize** — Sidebar resizing is now more responsive and fluid (#30)
+
+### Bug Fixes
+
+- Fixed **React and Vue README links** not pointing to the default variable list (#27)
+
+### Contributors
+
+- @ctate
+- @lucianfialho
+- @MatanBobi
+- @wobsoriano
+<!-- release:end -->
+
+## 0.3.1
+
+### Bug Fixes
+
+- Fixed published packages containing unresolved `workspace:*` dependencies
+
+## 0.3.0
+
+### New Features
+
+- **Vue support** — New `@visual-json/vue` package with `VisualJson`, `JsonEditor`, `TreeView`, `FormView`, `DiffView`, `SearchBar`, `Breadcrumbs`, and `ContextMenu` components for Vue 3.
+
+### Internal
+
+- Refactored monorepo package structure: packages moved under `packages/@visual-json/` namespace.
+- Shared UI utilities (diff, drag-and-drop, form, tree helpers, theme) extracted to `@internal/ui` for cross-framework reuse.
+
+## 0.2.0
+
+### New Features
+
+- **Multi-select** — Shift-click range selection, cmd/ctrl-click toggle, and bulk drag-and-drop reordering in TreeView.
+- **Enum dropdowns** — Schema-aware enum dropdowns in FormView, including boolean enums.
+- **VS Code extension** — Breadcrumbs, form view, and search bar adapted for the VS Code webview.
+
+### Bug Fixes
+
+- Prevent dropping a node into its own descendants.
+- Sync tree mode edits to raw mode.
+- Fix mobile focus issues in breadcrumbs, form view, and search bar.
+
+### Internal
+
+- `isDescendant` utility moved to `@visual-json/core` with unit tests.
+- New operations: `insertProperty`, `insertNode`, `reorderChildrenMulti`, `buildSubtree`, `reparentSubtree`.
+
+## 0.1.1
+
+### Bug Fixes
+
+- Fix published package configuration.
+
+## 0.1.0
+
+Initial release.
+
+### `@visual-json/core`
+
+- JSON-to-tree model (`fromJson` / `toJson`) with stable node IDs.
+- Full mutation API: `setValue`, `setKey`, `addProperty`, `removeNode`, `moveNode`, `reorderChildren`, `changeType`, `duplicateNode`.
+- Undo / redo via `History` class.
+- Tree search with `searchNodes`.
+- JSON Schema resolution and per-node validation (`resolveSchema`, `validateNode`).
+
+### `@visual-json/react`
+
+- `VisualJson` context provider with state management, history, and search.
+- `JsonEditor` wrapper component for quick integration.
+- `TreeView` — collapsible tree editor with keyboard navigation and drag-and-drop.
+- `FormView` — inline schema-aware form editor.
+- `SearchBar` — search with match navigation, expand/collapse controls.
+- `Breadcrumbs` — path-based breadcrumb navigation.
+- `ContextMenu` — right-click context menu for node operations.

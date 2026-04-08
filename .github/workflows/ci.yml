@@ -23,6 +23,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Check version sync
+        run: node scripts/check-version-sync.mjs
+
       - run: pnpm lint
 
       - run: pnpm type-check

@@ -1,5 +1,12 @@
 # @visual-json/core
 
+## 0.4.0
+
+### Minor Changes
+
+- YAML schema detection — `resolveSchema` now recognizes well-known YAML filenames and glob patterns for automatic schema-aware editing.
+- Smoother sidebar resize handling.
+
 ## 0.3.1
 
 ### Patch Changes

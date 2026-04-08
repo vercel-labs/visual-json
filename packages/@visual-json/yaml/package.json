@@ -1,6 +1,6 @@
 {
   "name": "@visual-json/yaml",
-  "version": "0.0.1",
+  "version": "0.4.0",
   "license": "Apache-2.0",
   "description": "YAML support for visual-json — parse, serialize, and schema-detect YAML files.",
   "keywords": [
