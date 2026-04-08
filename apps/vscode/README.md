@@ -6,12 +6,13 @@ VS Code extension for [visual-json](https://github.com/vercel-labs/visual-json) 
 
 ## Features
 
-- **Visual editor** for `.json` and `.jsonc` files via "Open With..." > "visual-json"
+- **Visual editor** for `.json`, `.jsonc`, `.yaml`, and `.yml` files via "Open With..." > "visual-json"
+- **YAML support** — open and edit YAML files with the same tree and form views used for JSON
 - **Tree sidebar** with expand/collapse, drag-and-drop, keyboard navigation, and search
 - **Form editor** with inline editing, schema-aware inputs, and breadcrumb navigation
-- **Schema support** — auto-detects schemas from `$schema` or known filenames (`package.json`, `tsconfig.json`, etc.)
+- **Schema support** — auto-detects schemas from `$schema` or known filenames (`package.json`, `tsconfig.json`, `docker-compose.yml`, GitHub Actions workflows, etc.)
 - **Theme integration** — adapts to your VS Code color theme automatically
-- **Explorer panel** — sidebar view that syncs with the active JSON file
+- **Explorer panel** — sidebar view that syncs with the active JSON or YAML file
 
 ## Development
 

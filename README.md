@@ -29,8 +29,12 @@ The visual JSON editor. Schema-aware, embeddable, extensible.
       <td>Vue UI components (TreeView, FormView, DiffView, and more)</td>
     </tr>
     <tr>
+      <td><a href="packages/@visual-json/yaml"><code>@visual-json/yaml</code></a></td>
+      <td>YAML support — parse, serialize, and schema-detect YAML files</td>
+    </tr>
+    <tr>
       <td><a href="apps/vscode"><code>@visual-json/vscode</code></a></td>
-      <td>VS Code extension — visual JSON editor with tree sidebar, schema support, and JSONC</td>
+      <td>VS Code extension — visual editor with tree sidebar, schema support, JSONC, and YAML</td>
     </tr>
   </tbody>
 </table>

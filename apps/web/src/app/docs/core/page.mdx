@@ -85,12 +85,16 @@ console.log(history.canUndo, history.canRedo);
 ## Schema
 
 Resolve JSON Schemas from well-known filenames (e.g. `package.json`, `tsconfig.json`) and
-navigate schema properties by path.
+navigate schema properties by path. YAML config files are supported too — `resolveSchema`
+recognizes filenames like `docker-compose.yml`, `.gitlab-ci.yml`, `pnpm-workspace.yaml`,
+and glob patterns like `.github/workflows/*.yml`.
 
 ```ts
 import { resolveSchema, getPropertySchema, clearSchemaCache } from "@visual-json/core";
 
 const schema = await resolveSchema(json, "package.json");
+// Also works with YAML filenames:
+// const schema = await resolveSchema(value, "docker-compose.yml");
 
 if (schema) {
   const propSchema = getPropertySchema(schema, "$.scripts.build");

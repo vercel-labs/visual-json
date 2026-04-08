@@ -3,6 +3,11 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import type { JsonValue, JsonSchema } from "@visual-json/core";
 import { resolveSchema } from "@visual-json/core";
+import {
+  isYamlFile,
+  parseYamlContent,
+  stringifyYamlContent,
+} from "@visual-json/yaml";
 import { JsonEditor } from "@visual-json/react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,6 +38,18 @@ import {
   PanelLeft,
   X,
 } from "lucide-react";
+
+function serializeValue(value: JsonValue, fname: string): string {
+  return isYamlFile(fname)
+    ? stringifyYamlContent(value)
+    : JSON.stringify(value, null, 2);
+}
+
+function parseText(text: string, fname: string): JsonValue {
+  return isYamlFile(fname)
+    ? parseYamlContent(text)
+    : (JSON.parse(text) as JsonValue);
+}
 
 type ViewMode = "tree" | "raw";
 
@@ -70,7 +87,7 @@ const samples: { name: string; filename: string; data: JsonValue }[] = [
   },
   {
     name: "OpenAPI spec",
-    filename: "openapi.json",
+    filename: "openapi.yaml",
     data: {
       openapi: "3.1.0",
       info: {
@@ -481,7 +498,7 @@ export function Editor({
   const [editorShowDescriptions, setEditorShowDescriptions] = useState(false);
   const [editorShowCounts, setEditorShowCounts] = useState(false);
   const [rawText, setRawText] = useState(
-    JSON.stringify(samples[0].data, null, 2),
+    serializeValue(samples[0].data, samples[0].filename),
   );
   const [rawError, setRawError] = useState<string | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -506,12 +523,12 @@ export function Editor({
       skipRawSync.current = false;
       return;
     }
-    setRawText(JSON.stringify(jsonValue, null, 2));
-  }, [jsonValue]);
+    setRawText(serializeValue(jsonValue, filename));
+  }, [jsonValue, filename]);
 
-  const loadJson = useCallback((text: string, fname: string) => {
+  const loadContent = useCallback((text: string, fname: string) => {
     try {
-      const parsed = JSON.parse(text);
+      const parsed = parseText(text, fname);
       setJsonValue(parsed);
       setFilename(fname);
       setActiveSample(fname);
@@ -519,7 +536,7 @@ export function Editor({
       setRawError(null);
       setParseError(null);
     } catch {
-      setParseError("Invalid JSON");
+      setParseError(isYamlFile(fname) ? "Invalid YAML" : "Invalid JSON");
     }
   }, []);
 
@@ -537,24 +554,26 @@ export function Editor({
   const handlePaste = useCallback(async () => {
     try {
       const text = await navigator.clipboard.readText();
-      loadJson(text, "pasted.json");
+      loadContent(text, "pasted.json");
     } catch {
       setPasteText("");
       setPasteDialogOpen(true);
     }
-  }, [loadJson]);
+  }, [loadContent]);
 
   const handlePasteSubmit = useCallback(() => {
     if (pasteText.trim()) {
-      loadJson(pasteText, "pasted.json");
+      loadContent(pasteText, "pasted.json");
     }
     setPasteDialogOpen(false);
     setPasteText("");
-  }, [pasteText, loadJson]);
+  }, [pasteText, loadContent]);
 
   const handleDownload = useCallback(() => {
-    const text = JSON.stringify(jsonValue, null, 2);
-    const blob = new Blob([text], { type: "application/json" });
+    const yaml = isYamlFile(filename);
+    const text = serializeValue(jsonValue, filename);
+    const mime = yaml ? "text/yaml" : "application/json";
+    const blob = new Blob([text], { type: mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -565,23 +584,32 @@ export function Editor({
 
   const handleCopyJson = useCallback(async () => {
     try {
-      await navigator.clipboard.writeText(JSON.stringify(jsonValue, null, 2));
+      await navigator.clipboard.writeText(serializeValue(jsonValue, filename));
     } catch {
       // clipboard access may be denied
     }
-  }, [jsonValue]);
+  }, [jsonValue, filename]);
 
-  const handleRawChange = useCallback((newText: string) => {
-    setRawText(newText);
-    try {
-      const parsed = JSON.parse(newText);
-      setRawError(null);
-      skipRawSync.current = true;
-      setJsonValue(parsed);
-    } catch (e) {
-      setRawError(e instanceof Error ? e.message : "Invalid JSON");
-    }
-  }, []);
+  const handleRawChange = useCallback(
+    (newText: string) => {
+      setRawText(newText);
+      try {
+        const parsed = parseText(newText, filename);
+        setRawError(null);
+        skipRawSync.current = true;
+        setJsonValue(parsed);
+      } catch (e) {
+        setRawError(
+          e instanceof Error
+            ? e.message
+            : isYamlFile(filename)
+              ? "Invalid YAML"
+              : "Invalid JSON",
+        );
+      }
+    },
+    [filename],
+  );
 
   useEffect(() => {
     const el = dropRef.current;
@@ -606,7 +634,7 @@ export function Editor({
         const reader = new FileReader();
         reader.onload = () => {
           if (typeof reader.result === "string")
-            loadJson(reader.result, file.name);
+            loadContent(reader.result, file.name);
         };
         reader.readAsText(file);
       }
@@ -619,7 +647,7 @@ export function Editor({
       el.removeEventListener("dragleave", handleDragLeave);
       el.removeEventListener("drop", handleDrop);
     };
-  }, [loadJson]);
+  }, [loadContent]);
 
   return (
     <div
@@ -630,7 +658,7 @@ export function Editor({
         <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 pointer-events-none">
           <div className="border-2 border-dashed border-primary rounded-lg p-8">
             <span className="text-foreground text-lg font-mono">
-              Drop JSON file here
+              Drop JSON or YAML file here
             </span>
           </div>
         </div>
@@ -681,14 +709,14 @@ export function Editor({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".json,.jsonc,.json5"
+          accept=".json,.jsonc,.json5,.yaml,.yml"
           onChange={(e) => {
             const file = e.target.files?.[0];
             if (file) {
               const reader = new FileReader();
               reader.onload = () => {
                 if (typeof reader.result === "string")
-                  loadJson(reader.result, file.name);
+                  loadContent(reader.result, file.name);
               };
               reader.readAsText(file);
             }
@@ -712,7 +740,7 @@ export function Editor({
             size="icon"
             className="h-7 w-7"
             onClick={handlePaste}
-            title="Paste JSON"
+            title="Paste"
           >
             <ClipboardPaste className="h-3.5 w-3.5" />
           </Button>
@@ -730,7 +758,7 @@ export function Editor({
             size="icon"
             className="h-7 w-7"
             onClick={handleCopyJson}
-            title="Copy JSON"
+            title="Copy"
           >
             <Copy className="h-3.5 w-3.5" />
           </Button>
@@ -863,12 +891,12 @@ export function Editor({
       <Dialog open={pasteDialogOpen} onOpenChange={setPasteDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Paste JSON</DialogTitle>
+            <DialogTitle>Paste JSON or YAML</DialogTitle>
           </DialogHeader>
           <textarea
             value={pasteText}
             onChange={(e) => setPasteText(e.target.value)}
-            placeholder="Paste your JSON here..."
+            placeholder="Paste your JSON or YAML here..."
             spellCheck={false}
             className="min-h-[200px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm font-mono resize-none outline-none"
           />

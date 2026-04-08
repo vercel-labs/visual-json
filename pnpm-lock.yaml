@@ -108,6 +108,9 @@ importers:
       '@visual-json/react':
         specifier: workspace:*
         version: link:../../packages/@visual-json/react
+      '@visual-json/yaml':
+        specifier: workspace:*
+        version: link:../../packages/@visual-json/yaml
       ai:
         specifier: ^6.0.94
         version: 6.0.97(zod@3.25.76)

@@ -17,7 +17,8 @@ visual-json is split into focused packages:
     <tr><td><code>@visual-json/core</code></td><td>Headless tree model, operations, schema resolution, diffing, search, and validation</td></tr>
     <tr><td><code>@visual-json/react</code></td><td>React UI components — TreeView, FormView, DiffView, and more</td></tr>
     <tr><td><code>@visual-json/vue</code></td><td>Vue 3 UI components — TreeView, FormView, DiffView, and more</td></tr>
-    <tr><td><code>@visual-json/vscode</code></td><td>VS Code extension — open any JSON/JSONC file with a visual editor</td></tr>
+    <tr><td><code>@visual-json/yaml</code></td><td>YAML support — parse, serialize, and schema-detect YAML files</td></tr>
+    <tr><td><code>@visual-json/vscode</code></td><td>VS Code extension — open any JSON, JSONC, or YAML file with a visual editor</td></tr>
   </tbody>
 </table>
 
@@ -92,12 +93,15 @@ visual-json supports multiple ways to view and edit your data:
 
 ## VS Code Extension
 
-visual-json is also available as a VS Code extension. Open any `.json` or `.jsonc` file,
+visual-json is also available as a VS Code extension. Open any `.json`, `.jsonc`, `.yaml`, or `.yml` file,
 right-click the tab, and choose **"Open With..." > "visual-json"** to use the visual editor.
 
 The extension includes a tree sidebar, form editor, schema support (auto-detected from
-`$schema` or known filenames like `package.json` and `tsconfig.json`), and adapts to your
-VS Code theme colors automatically.
+`$schema` or known filenames like `package.json`, `tsconfig.json`, `docker-compose.yml`,
+GitHub Actions workflows, and more), and adapts to your VS Code theme colors automatically.
+
+YAML files are parsed and serialized transparently — you edit them with the same tree and
+form views used for JSON, and changes are saved back as YAML.
 
 ## Next Steps
 
