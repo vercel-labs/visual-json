@@ -69,31 +69,31 @@ jobs:
         run: pnpm publish --no-git-checks
         working-directory: packages/@visual-json/core
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
 
       - name: Publish @visual-json/react
         run: pnpm publish --no-git-checks
         working-directory: packages/@visual-json/react
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
 
       - name: Publish @visual-json/vue
         run: pnpm publish --no-git-checks
         working-directory: packages/@visual-json/vue
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
 
       - name: Publish @visual-json/svelte
         run: pnpm publish --no-git-checks
         working-directory: packages/@visual-json/svelte
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
 
       - name: Publish @visual-json/yaml
         run: pnpm publish --no-git-checks
         working-directory: packages/@visual-json/yaml
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
 
   github-release:
     name: Create GitHub Release
