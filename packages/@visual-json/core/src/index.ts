@@ -48,6 +48,8 @@ export {
 
 export { validateNode, type ValidationResult } from "./validate";
 
+export { getWidgetType, type WidgetType } from "./widget";
+
 export { searchNodes, getAncestorIds, type SearchMatch } from "./search";
 
 export {

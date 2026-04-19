@@ -6,6 +6,7 @@ import {
   removeNode,
   getPropertySchema,
   resolveRef,
+  getWidgetType,
   type TreeNode,
   type JsonSchemaProperty,
   type JsonSchema,
@@ -13,6 +14,8 @@ import {
 import { useStudio } from "./context";
 import { Breadcrumbs } from "./breadcrumbs";
 import { EnumInput } from "./enum-input";
+import { RadioInput } from "./radio-input";
+import { CheckboxInput } from "./checkbox-input";
 import { getDisplayKey, getVisibleNodes } from "@internal/ui";
 import { deleteSelectedNodes, computeSelectAllIds } from "./selection-utils";
 import {
@@ -587,7 +590,7 @@ function renderEditInput(
   inputRef: React.RefObject<HTMLInputElement | HTMLSelectElement>,
   valueColor: string,
 ) {
-  const hasEnumValues = propSchema?.enum && propSchema.enum.length > 0;
+  const widgetType = getWidgetType(node.type, propSchema);
 
   const inputStyle: React.CSSProperties = {
     background: "none",
@@ -600,19 +603,31 @@ function renderEditInput(
     color: valueColor,
   };
 
-  if (node.type === "boolean") {
+  if (widgetType === "checkbox") {
     return (
-      <EnumInput
-        enumValues={["true", "false"]}
-        value={String(node.value)}
+      <CheckboxInput
+        value={node.value === true}
         onValueChange={handleValueChange}
         inputRef={inputRef as React.RefObject<HTMLInputElement>}
-        inputStyle={inputStyle}
       />
     );
   }
 
-  if (hasEnumValues && propSchema?.enum) {
+  if (widgetType === "radio") {
+    const options = propSchema?.enum
+      ? propSchema.enum.map(String)
+      : ["true", "false"];
+    return (
+      <RadioInput
+        options={options}
+        value={displayValue}
+        onValueChange={handleValueChange}
+        inputRef={inputRef as React.RefObject<HTMLInputElement>}
+      />
+    );
+  }
+
+  if (widgetType === "select" && propSchema?.enum) {
     return (
       <EnumInput
         enumValues={propSchema.enum}
