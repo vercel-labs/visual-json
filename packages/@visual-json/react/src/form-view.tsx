@@ -619,6 +619,7 @@ function renderEditInput(
       : ["true", "false"];
     return (
       <RadioInput
+        id={node.path}
         options={options}
         value={displayValue}
         onValueChange={handleValueChange}

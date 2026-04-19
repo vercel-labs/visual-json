@@ -1,6 +1,7 @@
 import type { RefObject } from "react";
 
 interface RadioInputProps {
+  id: string;
   options: string[];
   value: string;
   onValueChange: (val: string) => void;
@@ -8,6 +9,7 @@ interface RadioInputProps {
 }
 
 export function RadioInput({
+  id,
   options,
   value,
   onValueChange,
@@ -38,7 +40,7 @@ export function RadioInput({
           <input
             ref={i === 0 ? inputRef : undefined}
             type="radio"
-            name={`radio-group-${options.join("-")}`}
+            name={`radio-group-${id}`}
             value={option}
             checked={value === option}
             onChange={() => onValueChange(option)}

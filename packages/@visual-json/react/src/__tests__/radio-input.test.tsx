@@ -10,7 +10,12 @@ describe("RadioInput", () => {
 
   it("renders all options", () => {
     const { getByLabelText } = render(
-      <RadioInput options={options} value="low" onValueChange={() => {}} />,
+      <RadioInput
+        id="field-1"
+        options={options}
+        value="low"
+        onValueChange={() => {}}
+      />,
     );
     expect(getByLabelText("low")).toBeTruthy();
     expect(getByLabelText("medium")).toBeTruthy();
@@ -19,7 +24,12 @@ describe("RadioInput", () => {
 
   it("marks the current value as checked", () => {
     const { getByLabelText } = render(
-      <RadioInput options={options} value="medium" onValueChange={() => {}} />,
+      <RadioInput
+        id="field-1"
+        options={options}
+        value="medium"
+        onValueChange={() => {}}
+      />,
     );
     expect((getByLabelText("medium") as HTMLInputElement).checked).toBe(true);
     expect((getByLabelText("low") as HTMLInputElement).checked).toBe(false);
@@ -30,6 +40,7 @@ describe("RadioInput", () => {
     const onValueChange = vi.fn();
     const { getByLabelText } = render(
       <RadioInput
+        id="field-1"
         options={options}
         value="low"
         onValueChange={onValueChange}
@@ -41,7 +52,12 @@ describe("RadioInput", () => {
 
   it("all radios share the same name (mutual exclusion)", () => {
     const { getByLabelText } = render(
-      <RadioInput options={options} value="low" onValueChange={() => {}} />,
+      <RadioInput
+        id="field-1"
+        options={options}
+        value="low"
+        onValueChange={() => {}}
+      />,
     );
     const names = options.map(
       (o) => (getByLabelText(o) as HTMLInputElement).name,
@@ -53,6 +69,7 @@ describe("RadioInput", () => {
     const ref = { current: null };
     const { getByLabelText } = render(
       <RadioInput
+        id="field-1"
         options={options}
         value="low"
         onValueChange={() => {}}
