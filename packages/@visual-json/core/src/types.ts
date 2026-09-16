@@ -67,6 +67,7 @@ export interface JsonSchemaProperty {
   writeOnly?: boolean;
   examples?: JsonValue[];
   title?: string;
+  "x-widget"?: "select" | "radio" | "checkbox";
 }
 
 export interface JsonSchema extends JsonSchemaProperty {

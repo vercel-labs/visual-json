@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+<!-- release:start -->
+### New Features
+
+- **JSON Schema widget support** — `@visual-json/core` now exports `getWidgetType`, which maps a node type and its `JsonSchemaProperty` to a UI widget (`checkbox`, `radio`, `select`, or `input`). Boolean nodes always render as a checkbox; string/number nodes with `enum` render as radio buttons (≤ 3 options) or a select dropdown (> 3 options). The `x-widget` extension field overrides the default for any node (#25)
+- **`CheckboxInput` and `RadioInput` components** — New React components in `@visual-json/react` for rendering boolean and enum fields. `CheckboxInput` replaces the previous true/false enum dropdown for booleans. `RadioInput` renders mutually exclusive options for small enums
+
+### Improvements
+
+- **Smarter enum rendering** — Enum fields with more than 3 options now render as a `<select>` dropdown instead of a text input with autocomplete, making the distinction between small and large enums explicit
+
+<!-- release:end -->
+
 ## 0.4.0
 
 <!-- release:start -->
