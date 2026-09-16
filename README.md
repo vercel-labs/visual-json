@@ -1,5 +1,12 @@
 # visual-json
 
+<p>
+  <a href="https://vercel.com/labs#active-experiments"><img alt="Vercel Labs Experiment" src="https://img.shields.io/badge/Labs%20Experiment-000000.svg?style=for-the-badge&amp;logo=Vercel&amp;labelColor=000" height="28"></a>
+  <a href="https://www.npmjs.com/package/@visual-json/core"><img alt="npm version: @visual-json/core" src="https://img.shields.io/npm/v/%40visual-json%2Fcore.svg?style=for-the-badge&amp;labelColor=000000" height="28"></a>
+  <a href="https://github.com/vercel-labs/visual-json/blob/main/LICENSE"><img alt="License: Apache-2.0" src="https://img.shields.io/github/license/vercel-labs/visual-json.svg?style=for-the-badge&amp;labelColor=000000" height="28"></a>
+  <a href="https://www.npmjs.com/package/@visual-json/core"><img alt="npm downloads per month: @visual-json/core" src="https://img.shields.io/npm/dm/%40visual-json%2Fcore.svg?style=for-the-badge&amp;labelColor=000000&amp;label=npm%20downloads" height="28"></a>
+</p>
+
 The visual JSON editor. Schema-aware, embeddable, extensible.
 
 ## Packages
