@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsup --watch src",
     "check-types": "tsc --noEmit",
     "lint": "oxlint",
     "format": "prettier --write \"**/*.{ts,tsx}\""

@@ -28,7 +28,7 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch",
+    "dev": "tsup --watch src",
     "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
     "postpack": "node ../../../scripts/restore-package-json.mjs",
     "check-types": "tsc --noEmit",
