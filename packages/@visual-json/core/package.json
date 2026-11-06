@@ -30,11 +30,11 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "check-types": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "format": "prettier --write \"**/*.{ts,tsx}\""
   },
   "devDependencies": {
     "tsup": "^8.5.1",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }

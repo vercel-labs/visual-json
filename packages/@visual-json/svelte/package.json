@@ -12,7 +12,7 @@
     "build": "svelte-package -i ./src -o ./dist",
     "dev": "svelte-package -i src -o dist --watch",
     "check-types": "svelte-check --tsconfig ./tsconfig.json",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "format": "prettier --write ."
   },
   "files": [

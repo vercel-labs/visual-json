@@ -1,4 +1,5 @@
-import { resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import dts from "vite-plugin-dts";
@@ -12,6 +13,13 @@ export default defineConfig({
       insertTypesEntry: true,
       rollupTypes: true,
       bundledPackages: ["@internal/ui"],
+      // vite-plugin-dts looks typescript up from its own install location, which finds the
+      // repo root's TypeScript 7. API Extractor needs this package's TypeScript 5.
+      rollupOptions: {
+        typescriptCompilerFolder: dirname(
+          createRequire(import.meta.url).resolve("typescript/package.json"),
+        ),
+      },
     }),
   ],
   build: {
