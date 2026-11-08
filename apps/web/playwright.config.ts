@@ -21,5 +21,10 @@ export default defineConfig({
       "portless proxy start --no-tls -p 1355 && portless visual-json next dev --turbopack",
     url: "http://visual-json.localhost:1355",
     reuseExistingServer: !process.env.CI,
+    // portless runs the dev server in its own process group, which a SIGKILL of the
+    // web server command doesn't reach, so stop it with SIGTERM and let portless
+    // pass it on. Otherwise the dev server keeps Playwright's output open and the
+    // run never finishes.
+    gracefulShutdown: { signal: "SIGTERM", timeout: 10_000 },
   },
 });
