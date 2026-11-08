@@ -32,7 +32,7 @@
     "prepack": "node ../../../scripts/resolve-workspace-deps.mjs",
     "postpack": "node ../../../scripts/restore-package-json.mjs",
     "check-types": "vue-tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "format": "prettier --write \"**/*.{ts,vue}\""
   },
   "dependencies": {

@@ -3,3 +3,10 @@ packages:
   - "packages/@internal/*"
   - "apps/*"
   - "examples/*"
+
+# @sveltejs/package imports typescript without declaring it, so it would load whichever
+# version is hoisted. Declaring the peer links the svelte package's own TypeScript.
+packageExtensions:
+  "@sveltejs/package":
+    peerDependencies:
+      typescript: "^5.3.3"
