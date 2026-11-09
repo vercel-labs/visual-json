@@ -11,7 +11,7 @@
     "postpack": "node ../../../scripts/restore-package-json.mjs",
     "build": "svelte-package -i ./src -o ./dist",
     "dev": "svelte-package -i src -o dist --watch",
-    "check-types": "svelte-check --tsconfig ./tsconfig.json",
+    "check-types": "svelte-check --tsconfig ./tsconfig.json --tsgo",
     "lint": "oxlint",
     "format": "prettier --write ."
   },
@@ -43,8 +43,9 @@
     "@internal/ui": "workspace:*",
     "@sveltejs/package": "^2.5.7",
     "@sveltejs/vite-plugin-svelte": "^6.2.4",
+    "@typescript/native": "npm:typescript@7.0.2",
     "svelte": "^5.51.0",
-    "svelte-check": "^4.4.2",
+    "svelte-check": "^4.7.8",
     "typescript": "5.9.3",
     "vite": "^6.3.5"
   },

@@ -4,6 +4,10 @@
 
 Run `pnpm type-check` after every change to ensure there are no type errors.
 
+## TypeScript
+
+Everything runs on TypeScript 7 except `@visual-json/svelte` and `@visual-json/vue`. Their SFC toolchains (`svelte-package`/`svelte2tsx`, `vue-tsc`, `vite-plugin-dts`) still need the JavaScript compiler API that TypeScript 7 removed, so both packages stay on TypeScript 5.9. The Svelte package's type-check still runs on TypeScript 7: `svelte-check --tsgo` uses the `@typescript/native` alias of `typescript@7.0.2`. Do not bump `typescript` to 7 in those two packages until their tooling supports it.
+
 ## UI Components
 
 Use the shadcn CLI (`npx shadcn@latest add <component>`) to install UI components in `apps/web`. Never write shadcn components by hand.
