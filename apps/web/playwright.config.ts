@@ -5,7 +5,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  reporter: "html",
+  // Never serve the html report in CI: there is nobody to open it, and waiting
+  // on it keeps the run alive after the tests finish.
+  reporter: process.env.CI ? [["html", { open: "never" }]] : "html",
   use: {
     baseURL: "http://visual-json.localhost:1355",
     trace: "on-first-retry",
