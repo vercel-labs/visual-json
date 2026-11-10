@@ -177,7 +177,7 @@
   },
   "overrides": [
     {
-      "files": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+      "files": ["**/*.js", "**/*.mjs", "**/*.cjs", "**/*.svelte"],
       "rules": {
         "constructor-super": "error",
         "getter-return": [
@@ -202,12 +202,6 @@
         ],
         "no-setter-return": "error",
         "no-this-before-super": "error",
-        "no-undef": [
-          "error",
-          {
-            "typeof": false
-          }
-        ],
         "no-unreachable": "error",
         "no-unsafe-negation": [
           "error",
@@ -220,6 +214,17 @@
         "prefer-const": "off",
         "prefer-rest-params": "off",
         "prefer-spread": "off"
+      }
+    },
+    {
+      "files": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+      "rules": {
+        "no-undef": [
+          "error",
+          {
+            "typeof": false
+          }
+        ]
       },
       "globals": {
         "console": "readonly",
@@ -229,44 +234,9 @@
     {
       "files": ["**/*.svelte"],
       "rules": {
-        "constructor-super": "error",
-        "getter-return": [
-          "error",
-          {
-            "allowImplicit": false
-          }
-        ],
-        "no-class-assign": "error",
-        "no-const-assign": "error",
-        "no-dupe-class-members": "error",
-        "no-dupe-keys": "error",
-        "no-func-assign": "error",
-        "no-import-assign": "error",
-        "no-new-native-nonconstructor": "error",
-        "no-obj-calls": "error",
-        "no-redeclare": [
-          "error",
-          {
-            "builtinGlobals": true
-          }
-        ],
         "no-self-assign": "off",
-        "no-setter-return": "error",
-        "no-this-before-super": "error",
-        "no-unreachable": "error",
-        "no-unsafe-negation": [
-          "error",
-          {
-            "enforceForOrderingRelations": false
-          }
-        ],
         "no-unused-expressions": "off",
-        "no-unused-vars": "off",
-        "no-var": "off",
-        "no-with": "error",
-        "prefer-const": "off",
-        "prefer-rest-params": "off",
-        "prefer-spread": "off"
+        "no-unused-vars": "off"
       }
     },
     {
