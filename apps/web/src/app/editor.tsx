@@ -504,9 +504,17 @@ export function Editor({
   const [parseError, setParseError] = useState<string | null>(null);
   const [pasteDialogOpen, setPasteDialogOpen] = useState(false);
   const [pasteText, setPasteText] = useState("");
+  // The editor renders on the server too, so its markup exists before React has
+  // attached the event handlers. Effects only run after hydration, which lets the
+  // e2e tests wait for an interactive editor instead of racing the first click.
+  const [hydrated, setHydrated] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const skipRawSync = useRef(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -652,6 +660,7 @@ export function Editor({
   return (
     <div
       ref={dropRef}
+      data-vj-hydrated={hydrated ? "true" : undefined}
       className="flex flex-col h-[calc(100vh-3.5rem)] relative"
     >
       {isDragOver && (

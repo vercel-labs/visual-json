@@ -47,7 +47,7 @@
     "svelte": "^5.51.0",
     "svelte-check": "^4.7.8",
     "typescript": "5.9.3",
-    "vite": "^6.3.5"
+    "vite": "^7.3.1"
   },
   "keywords": [
     "json",

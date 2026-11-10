@@ -1,4 +1,5 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
+import { openEditor } from "./helpers";
 
 const treeSelector = "[role='tree']";
 const formSelector = "[data-form-container]";
@@ -60,8 +61,7 @@ async function bgColorsMatch(a: Locator, b: Locator): Promise<boolean> {
 
 test.describe("multi-select: tree view", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
   });
 
   test("plain click selects a single node", async ({ page }) => {
@@ -239,7 +239,7 @@ test.describe("multi-select: tree view", () => {
 
 test.describe("multi-select: form view", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await openEditor(page);
     await page.waitForSelector(formSelector);
   });
 
@@ -313,8 +313,7 @@ test.describe("multi-select: form view", () => {
 
 test.describe("multi-select: keyboard nav preserves form root", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
     await page.waitForSelector(formSelector);
   });
 
@@ -354,8 +353,7 @@ test.describe("multi-select: keyboard nav preserves form root", () => {
 
 test.describe("multi-select: tree delete edge cases", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
   });
 
   test("deleting all children leaves the root visible", async ({ page }) => {
@@ -382,8 +380,7 @@ test.describe("multi-select: tree delete edge cases", () => {
 
 test.describe("multi-select: cross-parent drag preserves state", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
   });
 
   test("expanded container stays expanded after cross-parent drag", async ({
@@ -422,8 +419,7 @@ test.describe("multi-select: cross-parent drag preserves state", () => {
 
 test.describe("multi-select: cross-view sync", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
     await page.waitForSelector(formSelector);
   });
 
@@ -456,8 +452,7 @@ test.describe("multi-select: cross-view sync", () => {
 
 test.describe("multi-select: Escape clears selection", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
     await page.waitForSelector(formSelector);
   });
 
@@ -530,8 +525,7 @@ test.describe("multi-select: Escape clears selection", () => {
 
 test.describe("multi-select: Cmd+A select all", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await page.waitForSelector(treeSelector);
+    await openEditor(page);
     await page.waitForSelector(formSelector);
   });
 
