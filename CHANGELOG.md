@@ -1,8 +1,25 @@
 # Changelog
 
-## 0.4.0
+## 0.4.1
 
 <!-- release:start -->
+### Improvements
+
+- **More YAML file types in VS Code** — The "Open with visual-json" command now works for Docker Compose, GitHub Actions workflow, and Home Assistant files (#35)
+
+### Bug Fixes
+
+- Fixed the **VS Code extension** failing to activate because `jsonc-parser` was not fully bundled (#35)
+- Fixed the **"Open with visual-json" command** not working until the visual-json editor or panel had been opened (#35)
+
+### Contributors
+
+- @ctate
+- @Railly
+<!-- release:end -->
+
+## 0.4.0
+
 ### New Features
 
 - **YAML support** — New `@visual-json/yaml` package for parsing, serializing, and round-tripping YAML through the visual-json tree model. The VS Code extension now opens `.yaml` and `.yml` files with the same tree and form views used for JSON (#29)
@@ -23,7 +40,6 @@
 - @lucianfialho
 - @MatanBobi
 - @wobsoriano
-<!-- release:end -->
 
 ## 0.3.1
 

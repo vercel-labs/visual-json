@@ -1,5 +1,11 @@
 # @visual-json/core
 
+## 0.4.1
+
+### Patch Changes
+
+- Version bump to keep all `@visual-json/*` packages in sync. No changes to this package.
+
 ## 0.4.0
 
 ### Minor Changes
