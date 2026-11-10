@@ -62,7 +62,7 @@
     "build": "node esbuild.mjs --production",
     "dev": "node esbuild.mjs --watch",
     "check-types": "tsc --noEmit",
-    "lint": "eslint .",
+    "lint": "oxlint",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "package": "vsce package --no-dependencies"
   },
@@ -79,6 +79,6 @@
     "esbuild": "^0.25.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "typescript": "5.9.3"
+    "typescript": "7.0.2"
   }
 }

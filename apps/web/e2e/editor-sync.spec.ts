@@ -1,10 +1,11 @@
 import { test, expect } from "@playwright/test";
+import { openEditor } from "./helpers";
 
 const rawTextarea = 'textarea[spellcheck="false"]';
 
 test.describe("editor tree/raw sync", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
+    await openEditor(page);
     await page.waitForSelector("[data-form-container]");
   });
 

@@ -9,6 +9,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -39,6 +40,7 @@ jobs:
       - name: Run e2e tests
         run: pnpm test:e2e
         working-directory: apps/web
+        timeout-minutes: 10
 
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
