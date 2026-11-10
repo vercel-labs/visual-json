@@ -2,6 +2,11 @@
   "name": "@visual-json/react",
   "version": "0.4.1",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vercel-labs/visual-json.git",
+    "directory": "packages/@visual-json/react"
+  },
   "description": "React components for visual-json — the visual JSON editor. Schema-aware, embeddable, extensible.",
   "keywords": [
     "json",

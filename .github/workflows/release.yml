@@ -31,21 +31,35 @@ jobs:
         with:
           node-version-file: .node-version
 
-      - name: Compare package.json version to npm and check GitHub release
+      - name: Check for unpublished packages and GitHub release
         id: check
         run: |
           LOCAL_VERSION=$(node -p "require('./packages/@visual-json/core/package.json').version")
-          echo "Local version: $LOCAL_VERSION"
+          echo "Core version: $LOCAL_VERSION"
 
-          NPM_VERSION=$(npm view @visual-json/core version 2>/dev/null || echo "0.0.0")
-          echo "npm version: $NPM_VERSION"
+          # A rerun after a partial failure must still publish: check every
+          # public package, not just core.
+          UNPUBLISHED=""
+          for dir in packages/@visual-json/*/; do
+            PKG=$(node -p "try { const p = require('./$dir/package.json'); p.private ? '' : p.name + '@' + p.version } catch { '' }")
+            if [ -z "$PKG" ]; then
+              continue
+            fi
 
-          if [ "$LOCAL_VERSION" != "$NPM_VERSION" ]; then
-            echo "Version changed: $NPM_VERSION -> $LOCAL_VERSION"
+            if npm view "$PKG" version &>/dev/null; then
+              echo "$PKG already published"
+            else
+              echo "$PKG not published"
+              UNPUBLISHED="$UNPUBLISHED $PKG"
+            fi
+          done
+
+          if [ -n "$UNPUBLISHED" ]; then
+            echo "Unpublished packages:$UNPUBLISHED"
             echo "should_release=true" >> "$GITHUB_OUTPUT"
             echo "needs_github_release=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Version unchanged on npm, skipping build and publish"
+            echo "All packages already published, skipping build and publish"
             echo "should_release=false" >> "$GITHUB_OUTPUT"
 
             TAG="v$LOCAL_VERSION"
