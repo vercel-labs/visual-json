@@ -6,100 +6,132 @@ on:
       - main
   workflow_dispatch:
 
-concurrency: ${{ github.workflow }}-${{ github.ref }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   check-release:
     name: Check for new version
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       should_release: ${{ steps.check.outputs.should_release }}
+      needs_github_release: ${{ steps.check.outputs.needs_github_release }}
       version: ${{ steps.check.outputs.version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Compare version to registry
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Compare package.json version to npm and check GitHub release
         id: check
         run: |
           LOCAL_VERSION=$(node -p "require('./packages/@visual-json/core/package.json').version")
           echo "Local version: $LOCAL_VERSION"
 
           NPM_VERSION=$(npm view @visual-json/core version 2>/dev/null || echo "0.0.0")
-          echo "Registry version: $NPM_VERSION"
+          echo "npm version: $NPM_VERSION"
 
           if [ "$LOCAL_VERSION" != "$NPM_VERSION" ]; then
             echo "Version changed: $NPM_VERSION -> $LOCAL_VERSION"
             echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "needs_github_release=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Version unchanged, skipping release"
+            echo "Version unchanged on npm, skipping build and publish"
             echo "should_release=false" >> "$GITHUB_OUTPUT"
+
+            TAG="v$LOCAL_VERSION"
+            if gh release view "$TAG" &>/dev/null; then
+              echo "GitHub release $TAG exists"
+              echo "needs_github_release=false" >> "$GITHUB_OUTPUT"
+            else
+              echo "GitHub release $TAG is missing, will create it"
+              echo "needs_github_release=true" >> "$GITHUB_OUTPUT"
+            fi
           fi
           echo "version=$LOCAL_VERSION" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish:
-    name: Publish
+    name: Publish to npm
     needs: check-release
     if: needs.check-release.outputs.should_release == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: Release
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
+      - name: Install pnpm
         uses: pnpm/action-setup@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           cache: pnpm
           registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm build
+      - name: Build packages
+        run: pnpm run build
 
-      - name: Publish @visual-json/core
-        run: pnpm publish --no-git-checks
-        working-directory: packages/@visual-json/core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
+      - name: Publish all public packages
+        run: |
+          LOCAL_VERSION="${{ needs.check-release.outputs.version }}"
+          FAILED=""
 
-      - name: Publish @visual-json/react
-        run: pnpm publish --no-git-checks
-        working-directory: packages/@visual-json/react
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
+          publish_pkg() {
+            local dir="$1" name="$2"
+            REGISTRY_VERSION=$(npm view "$name" version 2>/dev/null || echo "0.0.0")
+            if [ "$LOCAL_VERSION" = "$REGISTRY_VERSION" ]; then
+              echo "$name@$LOCAL_VERSION already published, skipping"
+              return 0
+            fi
+            echo "Publishing $name@$LOCAL_VERSION..."
+            TARBALL=$(cd "$dir" && pnpm pack --pack-destination /tmp | tail -1)
+            if ! npm publish "$TARBALL" --provenance --access public; then
+              FAILED="$FAILED $name"
+            fi
+          }
 
-      - name: Publish @visual-json/vue
-        run: pnpm publish --no-git-checks
-        working-directory: packages/@visual-json/vue
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
+          for dir in packages/@visual-json/*/; do
+            PKG_NAME=$(node -p "try { const p = require('./$dir/package.json'); p.private ? '' : p.name } catch { '' }")
+            [ -z "$PKG_NAME" ] && continue
+            publish_pkg "$dir" "$PKG_NAME"
+          done
 
-      - name: Publish @visual-json/svelte
-        run: pnpm publish --no-git-checks
-        working-directory: packages/@visual-json/svelte
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
-
-      - name: Publish @visual-json/yaml
-        run: pnpm publish --no-git-checks
-        working-directory: packages/@visual-json/yaml
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_VERCEL_TOKEN_ELEVATED }}
+          if [ -n "$FAILED" ]; then
+            echo "Failed to publish:$FAILED"
+            exit 1
+          fi
 
   github-release:
     name: Create GitHub Release
     needs: [check-release, publish]
-    if: needs.check-release.outputs.should_release == 'true'
+    if: >-
+      always()
+      && needs.check-release.outputs.needs_github_release == 'true'
+      && (needs.publish.result == 'success' || needs.publish.result == 'skipped')
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -107,7 +139,6 @@ jobs:
       - name: Extract changelog entry
         run: |
           VERSION="${{ needs.check-release.outputs.version }}"
-
           awk '/<!-- release:start -->/{found=1; next} /<!-- release:end -->/{found=0} found{print}' CHANGELOG.md > /tmp/release-notes.md
 
           LINES=$(wc -l < /tmp/release-notes.md | tr -d ' ')
@@ -123,11 +154,12 @@ jobs:
           TAG="v$VERSION"
 
           if gh release view "$TAG" &>/dev/null; then
-            echo "Release $TAG already exists, skipping"
+            echo "Release $TAG already exists"
           else
             echo "Creating release $TAG..."
             gh release create "$TAG" \
               --title "$TAG" \
+              --target ${{ github.sha }} \
               --notes-file /tmp/release-notes.md
           fi
         env:
